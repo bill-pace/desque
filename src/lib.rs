@@ -4,4 +4,4 @@ mod simulation;
 
 pub use crate::error::Error;
 pub use crate::events::{Event, EventQueue};
-pub use crate::simulation::{Simulation, State};
+pub use crate::simulation::{Simulation, SimState};

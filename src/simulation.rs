@@ -2,7 +2,7 @@ use crate::EventQueue;
 
 use std::fmt::Debug;
 
-pub trait State<Time>
+pub trait SimState<Time>
 where Time: Ord + Clone + Debug
 {
     fn is_complete(&self, _current_time: Time) -> bool {
@@ -11,21 +11,21 @@ where Time: Ord + Clone + Debug
 }
 
 #[derive(Debug)]
-pub struct Simulation<SimState, Time>
+pub struct Simulation<State, Time>
 where
-    SimState: State<Time>,
+    State: SimState<Time>,
     Time: Ord + Clone + Debug,
 {
-    pub event_queue: EventQueue<SimState, Time>,
-    pub state: SimState,
+    pub event_queue: EventQueue<State, Time>,
+    pub state: State,
 }
 
-impl<SimState, Time> Simulation<SimState, Time>
+impl<State, Time> Simulation<State, Time>
 where
-    SimState: State<Time>,
+    State: SimState<Time>,
     Time: Ord + Clone + Debug,
 {
-    pub fn new(initial_state: SimState, start_time: Time) -> Self {
+    pub fn new(initial_state: State, start_time: Time) -> Self {
         Self {
             event_queue: EventQueue::new(start_time),
             state: initial_state,
@@ -57,11 +57,11 @@ mod tests {
     }
 
     #[derive(Debug)]
-    struct SimState {
+    struct State {
         executed_event_values: Vec<u32>,
         complete: bool
     }
-    impl State<SimTime> for SimState {
+    impl SimState<SimTime> for State {
         fn is_complete(&self, _: SimTime) -> bool {
             self.complete
         }
@@ -71,8 +71,8 @@ mod tests {
         value: u32,
     }
 
-    impl Event<SimState, SimTime> for TestEvent {
-        fn execute(&mut self, simulation_state: &mut SimState, _: &mut EventQueue<SimState, SimTime>) -> Result<(), crate::Error> {
+    impl Event<State, SimTime> for TestEvent {
+        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, SimTime>) -> Result<(), crate::Error> {
             simulation_state.executed_event_values.push(self.value);
             Ok(())
         }
@@ -80,16 +80,16 @@ mod tests {
 
     struct CompletionEvent {}
 
-    impl Event<SimState, SimTime> for CompletionEvent {
-        fn execute(&mut self, simulation_state: &mut SimState, _: &mut EventQueue<SimState, SimTime>) -> Result<(), crate::Error> {
+    impl Event<State, SimTime> for CompletionEvent {
+        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, SimTime>) -> Result<(), crate::Error> {
             simulation_state.complete = true;
             Ok(())
         }
     }
 
-    fn setup() -> Simulation<SimState, SimTime> {
+    fn setup() -> Simulation<State, SimTime> {
         let mut sim = Simulation::new(
-            SimState {
+            State {
                 executed_event_values: Vec::with_capacity(3),
                 complete: false,
             },

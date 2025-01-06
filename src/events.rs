@@ -1,30 +1,30 @@
-use crate::State;
+use crate::SimState;
 
 use std::cmp::{Ordering, Reverse};
 use std::collections::BinaryHeap;
 use std::fmt::Debug;
 
-pub trait Event<SimState, Time>
+pub trait Event<State, Time>
 where
-    SimState: State<Time>,
+    State: SimState<Time>,
     Time: Ord + Clone + Debug,
 {
-    fn execute(&mut self, simulation_state: &mut SimState, event_queue: &mut EventQueue<SimState, Time>) -> Result<(), crate::Error>;
+    fn execute(&mut self, simulation_state: &mut State, event_queue: &mut EventQueue<State, Time>) -> Result<(), crate::Error>;
 }
 
 #[derive(Debug, Default)]
-pub struct EventQueue<SimState, Time>
+pub struct EventQueue<State, Time>
 where
-    SimState: State<Time>,
+    State: SimState<Time>,
     Time: Ord + Clone + Debug,
 {
-    events: BinaryHeap<Reverse<EventHolder<SimState, Time>>>,
+    events: BinaryHeap<Reverse<EventHolder<State, Time>>>,
     last_execution_time: Time,
 }
 
-impl<SimState, Time> EventQueue<SimState, Time>
+impl<State, Time> EventQueue<State, Time>
 where
-    SimState: State<Time>,
+    State: SimState<Time>,
     Time: Ord + Clone + Debug,
 {
     pub(crate) fn new(start_time: Time) -> Self {
@@ -35,7 +35,7 @@ where
     }
 
     pub fn schedule<EventType>(&mut self, event: EventType, time: Time) -> Result<(), crate::Error>
-    where EventType: Event<SimState, Time> + 'static
+    where EventType: Event<State, Time> + 'static
     {
         if time < self.last_execution_time {
             return Err(crate::Error::BackInTime);
@@ -46,12 +46,12 @@ where
     }
 
     pub unsafe fn schedule_unchecked<EventType>(&mut self, event: EventType, time: Time)
-    where EventType: Event<SimState, Time> + 'static
+    where EventType: Event<State, Time> + 'static
     {
         self.events.push(Reverse(EventHolder { execution_time: time, event: Box::new(event) }));
     }
 
-    pub fn schedule_from_boxed(&mut self, event: Box<dyn Event<SimState, Time>>, time: Time) -> Result<(), crate::Error> {
+    pub fn schedule_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) -> Result<(), crate::Error> {
         if time < self.last_execution_time {
             return Err(crate::Error::BackInTime);
         }
@@ -60,11 +60,11 @@ where
         Ok(())
     }
 
-    pub unsafe fn schedule_unchecked_from_boxed(&mut self, event: Box<dyn Event<SimState, Time>>, time: Time) {
+    pub unsafe fn schedule_unchecked_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) {
         self.events.push(Reverse(EventHolder { execution_time: time, event }));
     }
 
-    pub(crate) fn get_next(&mut self) -> Option<Box<dyn Event<SimState, Time>>> {
+    pub(crate) fn get_next(&mut self) -> Option<Box<dyn Event<State, Time>>> {
         if let Some(event_holder) = self.events.pop() {
             self.last_execution_time = event_holder.0.execution_time;
             Some(event_holder.0.event)
@@ -78,9 +78,9 @@ where
     }
 }
 
-impl<SimState, Time> std::fmt::Display for EventQueue<SimState, Time>
+impl<State, Time> std::fmt::Display for EventQueue<State, Time>
 where
-    SimState: State<Time>,
+    State: SimState<Time>,
     Time: Ord + Clone + Debug,
 {
     fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -88,18 +88,18 @@ where
     }
 }
 
-struct EventHolder<SimState, Time>
+struct EventHolder<State, Time>
 where
-    SimState: State<Time>,
+    State: SimState<Time>,
     Time: Ord + Clone + Debug,
 {
     execution_time: Time,
-    event: Box<dyn Event<SimState, Time>>,
+    event: Box<dyn Event<State, Time>>,
 }
 
-impl<SimState, Time> Debug for EventHolder<SimState, Time>
+impl<State, Time> Debug for EventHolder<State, Time>
 where
-    SimState: State<Time>,
+    State: SimState<Time>,
     Time: Ord + Clone + Debug,
 {
     fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -107,9 +107,9 @@ where
     }
 }
 
-impl<SimState, Time> PartialEq<Self> for EventHolder<SimState, Time>
+impl<State, Time> PartialEq<Self> for EventHolder<State, Time>
 where
-    SimState: State<Time>,
+    State: SimState<Time>,
     Time: Ord + Clone + Debug,
 {
     fn eq(&self, other: &Self) -> bool {
@@ -117,15 +117,15 @@ where
     }
 }
 
-impl<SimState, Time> Eq for EventHolder<SimState, Time>
+impl<State, Time> Eq for EventHolder<State, Time>
 where
-    SimState: State<Time>,
+    State: SimState<Time>,
     Time: Ord + Clone + Debug,
 {}
 
-impl<SimState, Time> PartialOrd<Self> for EventHolder<SimState, Time>
+impl<State, Time> PartialOrd<Self> for EventHolder<State, Time>
 where
-    SimState: State<Time>,
+    State: SimState<Time>,
     Time: Ord + Clone + Debug,
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
@@ -133,9 +133,9 @@ where
     }
 }
 
-impl<SimState, Time> Ord for EventHolder<SimState, Time>
+impl<State, Time> Ord for EventHolder<State, Time>
 where
-    SimState: State<Time>,
+    State: SimState<Time>,
     Time: Ord + Clone + Debug,
 {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -153,17 +153,17 @@ mod tests {
     }
 
     #[derive(Debug)]
-    struct SimState {
+    struct State {
         executed_event_values: Vec<i32>,
     }
-    impl State<SimTime> for SimState {}
+    impl SimState<SimTime> for State {}
 
     struct TestEvent {
         value: i32,
     }
 
-    impl Event<SimState, SimTime> for TestEvent {
-        fn execute(&mut self, simulation_state: &mut SimState, _: &mut EventQueue<SimState, SimTime>) -> Result<(), crate::Error> {
+    impl Event<State, SimTime> for TestEvent {
+        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, SimTime>) -> Result<(), crate::Error> {
             simulation_state.executed_event_values.push(self.value);
             Ok(())
         }
@@ -171,7 +171,7 @@ mod tests {
 
     #[test]
     fn execution_time_ascends() {
-        let mut state = SimState { executed_event_values: Vec::with_capacity(3) };
+        let mut state = State { executed_event_values: Vec::with_capacity(3) };
         let mut queue = EventQueue::new(SimTime { time: 0 });
         queue.schedule(TestEvent { value: 1 }, SimTime { time: 1 }).unwrap();
         queue.schedule(TestEvent { value: 2 }, SimTime { time: 3 }).unwrap();
