@@ -200,6 +200,6 @@ mod tests {
             queue.schedule_unchecked(TestEvent { value: 1 }, SimTime { time: -1 });
         }
         queue.get_next().unwrap();
-        assert_eq!(-1, queue.current_time().time, "current time did not update when popping event scheduled in the past");
+        assert_eq!(SimTime { time: -1 }, queue.current_time(), "current time did not update when popping event scheduled in the past");
     }
 }
