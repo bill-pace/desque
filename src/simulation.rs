@@ -2,8 +2,10 @@ use crate::EventQueue;
 
 use std::fmt::Debug;
 
-pub trait State {
-    fn is_complete(&self) -> bool {
+pub trait State<Time>
+where Time: Ord + Clone + Debug
+{
+    fn is_complete(&self, _current_time: Time) -> bool {
         false
     }
 }
@@ -11,7 +13,7 @@ pub trait State {
 #[derive(Debug)]
 pub struct Simulation<SimState, Time>
 where
-    SimState: State,
+    SimState: State<Time>,
     Time: Ord + Clone + Debug,
 {
     pub event_queue: EventQueue<SimState, Time>,
@@ -20,7 +22,7 @@ where
 
 impl<SimState, Time> Simulation<SimState, Time>
 where
-    SimState: State,
+    SimState: State<Time>,
     Time: Ord + Clone + Debug,
 {
     pub fn new(initial_state: SimState, start_time: Time) -> Self {
@@ -31,7 +33,7 @@ where
     }
 
     pub fn run(&mut self) -> Result<(), crate::Error> {
-        while !self.state.is_complete() {
+        while !self.state.is_complete(self.event_queue.current_time()) {
             let next_event = self.event_queue.get_next();
             if next_event.is_none() {
                 break;
@@ -59,8 +61,8 @@ mod tests {
         executed_event_values: Vec<u32>,
         complete: bool
     }
-    impl State for SimState {
-        fn is_complete(&self) -> bool {
+    impl State<SimTime> for SimState {
+        fn is_complete(&self, _: SimTime) -> bool {
             self.complete
         }
     }

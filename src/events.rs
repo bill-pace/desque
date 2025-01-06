@@ -6,7 +6,7 @@ use std::fmt::Debug;
 
 pub trait Event<SimState, Time>
 where
-    SimState: State,
+    SimState: State<Time>,
     Time: Ord + Clone + Debug,
 {
     fn execute(&mut self, simulation_state: &mut SimState, event_queue: &mut EventQueue<SimState, Time>) -> Result<(), crate::Error>;
@@ -15,7 +15,7 @@ where
 #[derive(Debug, Default)]
 pub struct EventQueue<SimState, Time>
 where
-    SimState: State,
+    SimState: State<Time>,
     Time: Ord + Clone + Debug,
 {
     events: BinaryHeap<Reverse<EventHolder<SimState, Time>>>,
@@ -24,7 +24,7 @@ where
 
 impl<SimState, Time> EventQueue<SimState, Time>
 where
-    SimState: State,
+    SimState: State<Time>,
     Time: Ord + Clone + Debug,
 {
     pub(crate) fn new(start_time: Time) -> Self {
@@ -80,7 +80,7 @@ where
 
 impl<SimState, Time> std::fmt::Display for EventQueue<SimState, Time>
 where
-    SimState: State,
+    SimState: State<Time>,
     Time: Ord + Clone + Debug,
 {
     fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -90,7 +90,7 @@ where
 
 struct EventHolder<SimState, Time>
 where
-    SimState: State,
+    SimState: State<Time>,
     Time: Ord + Clone + Debug,
 {
     execution_time: Time,
@@ -99,7 +99,7 @@ where
 
 impl<SimState, Time> Debug for EventHolder<SimState, Time>
 where
-    SimState: State,
+    SimState: State<Time>,
     Time: Ord + Clone + Debug,
 {
     fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -109,7 +109,7 @@ where
 
 impl<SimState, Time> PartialEq<Self> for EventHolder<SimState, Time>
 where
-    SimState: State,
+    SimState: State<Time>,
     Time: Ord + Clone + Debug,
 {
     fn eq(&self, other: &Self) -> bool {
@@ -119,13 +119,13 @@ where
 
 impl<SimState, Time> Eq for EventHolder<SimState, Time>
 where
-    SimState: State,
+    SimState: State<Time>,
     Time: Ord + Clone + Debug,
 {}
 
 impl<SimState, Time> PartialOrd<Self> for EventHolder<SimState, Time>
 where
-    SimState: State,
+    SimState: State<Time>,
     Time: Ord + Clone + Debug,
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
@@ -135,7 +135,7 @@ where
 
 impl<SimState, Time> Ord for EventHolder<SimState, Time>
 where
-    SimState: State,
+    SimState: State<Time>,
     Time: Ord + Clone + Debug,
 {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -156,7 +156,7 @@ mod tests {
     struct SimState {
         executed_event_values: Vec<i32>,
     }
-    impl State for SimState {}
+    impl State<SimTime> for SimState {}
 
     struct TestEvent {
         value: i32,
