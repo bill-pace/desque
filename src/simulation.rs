@@ -22,7 +22,7 @@ where
         }
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> Result<(), crate::Error> {
         while !self.state.is_complete() {
             let next_event = self.event_queue.get_next();
             if next_event.is_none() {
@@ -30,8 +30,9 @@ where
             }
 
             let mut next_event = next_event.unwrap();
-            next_event.execute(&mut self.state, &mut self.event_queue);
+            next_event.execute(&mut self.state, &mut self.event_queue)?;
         }
+        Ok(())
     }
 }
 
@@ -60,16 +61,18 @@ mod tests {
     }
 
     impl Event<SimState, SimTime> for TestEvent {
-        fn execute(&mut self, simulation_state: &mut SimState, _: &mut EventQueue<SimState, SimTime>) {
+        fn execute(&mut self, simulation_state: &mut SimState, _: &mut EventQueue<SimState, SimTime>) -> Result<(), crate::Error> {
             simulation_state.executed_event_values.push(self.value);
+            Ok(())
         }
     }
 
     struct CompletionEvent {}
 
     impl Event<SimState, SimTime> for CompletionEvent {
-        fn execute(&mut self, simulation_state: &mut SimState, _: &mut EventQueue<SimState, SimTime>) {
+        fn execute(&mut self, simulation_state: &mut SimState, _: &mut EventQueue<SimState, SimTime>) -> Result<(), crate::Error> {
             simulation_state.complete = true;
+            Ok(())
         }
     }
 
@@ -97,7 +100,7 @@ mod tests {
     #[test]
     fn simulation_executes_events() {
         let mut sim = setup();
-        sim.run();
+        sim.run().unwrap();
 
         let expected = vec![1, 3, 2];
         assert_eq!(expected, sim.state.executed_event_values, "events did not execute in correct order");
@@ -107,7 +110,7 @@ mod tests {
     fn simulation_stops_with_events_still_in_queue() {
         let mut sim = setup();
         sim.event_queue.schedule_from_boxed(Box::new(CompletionEvent {}), SimTime { time: 3 }).unwrap();
-        sim.run();
+        sim.run().unwrap();
 
         let expected = vec![1, 3];
         assert_eq!(expected, sim.state.executed_event_values, "simulation did not terminate with completion event");

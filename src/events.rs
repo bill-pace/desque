@@ -7,7 +7,7 @@ pub trait Event<SimState, Time>
 where SimState: State,
       Time: Ord,
 {
-    fn execute(&mut self, simulation_state: &mut SimState, event_queue: &mut EventQueue<SimState, Time>);
+    fn execute(&mut self, simulation_state: &mut SimState, event_queue: &mut EventQueue<SimState, Time>) -> Result<(), crate::Error>;
 }
 
 #[derive(Default)]
@@ -126,8 +126,9 @@ mod tests {
     }
 
     impl Event<SimState, SimTime> for TestEvent {
-        fn execute(&mut self, simulation_state: &mut SimState, _: &mut EventQueue<SimState, SimTime>) {
+        fn execute(&mut self, simulation_state: &mut SimState, _: &mut EventQueue<SimState, SimTime>) -> Result<(), crate::Error> {
             simulation_state.executed_event_values.push(self.value);
+            Ok(())
         }
     }
 
@@ -141,7 +142,7 @@ mod tests {
         let expected = vec![1, 3, 2];
 
         while let Some(mut event) = queue.get_next() {
-            event.execute(&mut state, &mut queue);
+            event.execute(&mut state, &mut queue).unwrap();
         }
 
         assert_eq!(expected, state.executed_event_values, "events did not execute in expected order");
