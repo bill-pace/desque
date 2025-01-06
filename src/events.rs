@@ -43,6 +43,12 @@ where
         Ok(())
     }
 
+    pub unsafe fn schedule_unchecked<EventType>(&mut self, event: EventType, time: Time)
+    where EventType: Event<SimState, Time> + 'static
+    {
+        self.events.push(Reverse(EventHolder { execution_time: time, event: Box::new(event) }));
+    }
+
     pub fn schedule_from_boxed(&mut self, event: Box<dyn Event<SimState, Time>>, time: Time) -> Result<(), crate::Error> {
         if time < self.last_execution_time {
             return Err(crate::Error::BackInTime);
@@ -50,6 +56,10 @@ where
 
         self.events.push(Reverse(EventHolder { execution_time: time, event }));
         Ok(())
+    }
+
+    pub unsafe fn schedule_unchecked_from_boxed(&mut self, event: Box<dyn Event<SimState, Time>>, time: Time) {
+        self.events.push(Reverse(EventHolder { execution_time: time, event }));
     }
 
     pub(crate) fn get_next(&mut self) -> Option<Box<dyn Event<SimState, Time>>> {
@@ -155,8 +165,18 @@ mod tests {
     #[test]
     fn schedule_fails_if_given_invalid_execution_time() {
         let mut queue = EventQueue::new(SimTime { time: 0 });
-        let result = queue.schedule(TestEvent { value: 0 }, SimTime{ time: -1 });
+        let result = queue.schedule(TestEvent { value: 0 }, SimTime { time: -1 });
         assert!(result.is_err(), "queue failed to reject event scheduled for the past");
         assert_eq!(crate::Error::BackInTime, result.err().unwrap(), "queue returned unexpected error type");
+    }
+
+    #[test]
+    fn unsafe_schedulers_allow_time_to_reverse() {
+        let mut queue = EventQueue::new(SimTime { time: 0 });
+        unsafe {
+            queue.schedule_unchecked(TestEvent { value: 1 }, SimTime { time: -1 });
+        }
+        queue.get_next().unwrap();
+        assert_eq!(-1, queue.current_time().time, "current time did not update when popping event scheduled in the past");
     }
 }
