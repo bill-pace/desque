@@ -10,7 +10,7 @@ where
     State: SimState<Time>,
     Time: SimTime,
 {
-    fn execute(&mut self, simulation_state: &mut State, event_queue: &mut EventQueue<State, Time>) -> Result<(), crate::Error>;
+    fn execute(&mut self, simulation_state: &mut State, event_queue: &mut EventQueue<State, Time>) -> crate::Result;
 }
 
 #[derive(Debug, Default)]
@@ -35,7 +35,7 @@ where
         }
     }
 
-    pub fn schedule<EventType>(&mut self, event: EventType, time: Time) -> Result<(), crate::Error>
+    pub fn schedule<EventType>(&mut self, event: EventType, time: Time) -> crate::Result
     where EventType: Event<State, Time> + 'static
     {
         if time < self.last_execution_time {
@@ -52,7 +52,7 @@ where
         self.events.push(Reverse(EventHolder { execution_time: time, event: Box::new(event) }));
     }
 
-    pub fn schedule_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) -> Result<(), crate::Error> {
+    pub fn schedule_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) -> crate::Result {
         if time < self.last_execution_time {
             return Err(crate::Error::BackInTime);
         }
@@ -166,7 +166,7 @@ mod tests {
     }
 
     impl Event<State, Time> for TestEvent {
-        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, Time>) -> Result<(), crate::Error> {
+        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, Time>) -> crate::Result {
             simulation_state.executed_event_values.push(self.value);
             Ok(())
         }

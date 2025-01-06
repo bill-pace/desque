@@ -38,3 +38,5 @@ impl std::error::Error for Error {
         }
     }
 }
+
+pub type Result = std::result::Result<(), Error>;

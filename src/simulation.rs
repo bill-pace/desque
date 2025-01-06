@@ -32,7 +32,7 @@ where
         }
     }
 
-    pub fn run(&mut self) -> Result<(), crate::Error> {
+    pub fn run(&mut self) -> crate::Result {
         while !self.state.is_complete(self.event_queue.current_time()) {
             let next_event = self.event_queue.get_next();
             if next_event.is_none() {
@@ -84,7 +84,7 @@ mod tests {
     }
 
     impl Event<State, Time> for TestEvent {
-        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, Time>) -> Result<(), crate::Error> {
+        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, Time>) -> crate::Result {
             simulation_state.executed_event_values.push(self.value);
             Ok(())
         }
@@ -93,7 +93,7 @@ mod tests {
     struct CompletionEvent {}
 
     impl Event<State, Time> for CompletionEvent {
-        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, Time>) -> Result<(), crate::Error> {
+        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, Time>) -> crate::Result {
             simulation_state.complete = true;
             Ok(())
         }
