@@ -2,7 +2,6 @@ use crate::SimState;
 
 use std::cmp::{Ordering, Reverse};
 use std::collections::BinaryHeap;
-use std::fmt::Debug;
 
 pub trait SimTime: Ord + Clone + std::fmt::Debug {}
 
@@ -99,7 +98,7 @@ where
     event: Box<dyn Event<State, Time>>,
 }
 
-impl<State, Time> Debug for EventHolder<State, Time>
+impl<State, Time> std::fmt::Debug for EventHolder<State, Time>
 where
     State: SimState<Time>,
     Time: SimTime,
