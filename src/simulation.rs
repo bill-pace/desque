@@ -6,11 +6,10 @@ pub trait State {
     }
 }
 
-
 pub struct Simulation<SimState, Time>
 where
     SimState: State,
-    Time: Ord
+    Time: Ord + Clone,
 {
     pub event_queue: EventQueue<SimState, Time>,
     pub state: SimState,
@@ -19,7 +18,7 @@ where
 impl<SimState, Time> Simulation<SimState, Time>
 where
     SimState: State,
-    Time: Ord
+    Time: Ord + Clone,
 {
     pub fn new(initial_state: SimState, start_time: Time) -> Self {
         Self {
@@ -47,7 +46,7 @@ mod tests {
     use crate::Event;
     use super::*;
 
-    #[derive(Eq, PartialEq, Ord, PartialOrd)]
+    #[derive(Eq, PartialEq, Ord, PartialOrd, Copy, Clone)]
     struct SimTime {
         time: u32,
     }

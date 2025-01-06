@@ -5,7 +5,7 @@ use std::collections::BinaryHeap;
 
 pub trait Event<SimState, Time>
 where SimState: State,
-      Time: Ord,
+      Time: Ord + Clone,
 {
     fn execute(&mut self, simulation_state: &mut SimState, event_queue: &mut EventQueue<SimState, Time>) -> Result<(), crate::Error>;
 }
@@ -14,7 +14,7 @@ where SimState: State,
 pub struct EventQueue<SimState, Time>
 where
     SimState: State,
-    Time: Ord,
+    Time: Ord + Clone,
 {
     events: BinaryHeap<Reverse<EventHolder<SimState, Time>>>,
     last_execution_time: Time,
@@ -23,7 +23,7 @@ where
 impl<SimState, Time> EventQueue<SimState, Time>
 where
     SimState: State,
-    Time: Ord,
+    Time: Ord + Clone,
 {
     pub(crate) fn new(start_time: Time) -> Self {
         Self {
@@ -60,12 +60,16 @@ where
             None
         }
     }
+
+    pub fn current_time(&self) -> Time {
+        self.last_execution_time.clone()
+    }
 }
 
 struct EventHolder<SimState, Time>
 where
     SimState: State,
-    Time: Ord,
+    Time: Ord + Clone,
 {
     execution_time: Time,
     event: Box<dyn Event<SimState, Time>>,
@@ -74,7 +78,7 @@ where
 impl<SimState, Time> PartialEq<Self> for EventHolder<SimState, Time>
 where
     SimState: State,
-    Time: Ord,
+    Time: Ord + Clone,
 {
     fn eq(&self, other: &Self) -> bool {
         self.execution_time == other.execution_time
@@ -84,13 +88,13 @@ where
 impl<SimState, Time> Eq for EventHolder<SimState, Time>
 where
     SimState: State,
-    Time: Ord,
+    Time: Ord + Clone,
 {}
 
 impl<SimState, Time> PartialOrd<Self> for EventHolder<SimState, Time>
 where
     SimState: State,
-    Time: Ord,
+    Time: Ord + Clone,
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self.execution_time.partial_cmp(&other.execution_time)
@@ -100,7 +104,7 @@ where
 impl<SimState, Time> Ord for EventHolder<SimState, Time>
 where
     SimState: State,
-    Time: Ord,
+    Time: Ord + Clone,
 {
     fn cmp(&self, other: &Self) -> Ordering {
         self.execution_time.cmp(&other.execution_time)
@@ -111,7 +115,7 @@ where
 mod tests {
     use super::*;
 
-    #[derive(Eq, PartialEq, Ord, PartialOrd)]
+    #[derive(Eq, PartialEq, Ord, PartialOrd, Copy, Clone)]
     struct SimTime {
         time: i32,
     }
