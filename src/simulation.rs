@@ -1,6 +1,6 @@
 use crate::{EventQueue, SimTime};
 
-use std::fmt::Debug;
+use std::fmt::{Debug, Formatter};
 
 pub trait SimState<Time>
 where Time: SimTime
@@ -43,6 +43,16 @@ where
             next_event.execute(&mut self.state, &mut self.event_queue)?;
         }
         Ok(())
+    }
+}
+
+impl<State, Time> std::fmt::Display for Simulation<State, Time>
+where
+    State: SimState<Time>,
+    Time: SimTime,
+{
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "Simulation at time {:?}", self.event_queue.current_time())
     }
 }
 
