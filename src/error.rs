@@ -30,4 +30,11 @@ impl std::fmt::Display for Error {
     }
 }
 
-impl std::error::Error for Error {}
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::BackInTime => None,
+            Self::BadExecution(e) => Some(e.as_ref()),
+        }
+    }
+}
