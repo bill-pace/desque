@@ -1,15 +1,18 @@
 use crate::EventQueue;
 
+use std::fmt::Debug;
+
 pub trait State {
     fn is_complete(&self) -> bool {
         false
     }
 }
 
+#[derive(Debug)]
 pub struct Simulation<SimState, Time>
 where
     SimState: State,
-    Time: Ord + Clone,
+    Time: Ord + Clone + Debug,
 {
     pub event_queue: EventQueue<SimState, Time>,
     pub state: SimState,
@@ -18,7 +21,7 @@ where
 impl<SimState, Time> Simulation<SimState, Time>
 where
     SimState: State,
-    Time: Ord + Clone,
+    Time: Ord + Clone + Debug,
 {
     pub fn new(initial_state: SimState, start_time: Time) -> Self {
         Self {
@@ -46,11 +49,12 @@ mod tests {
     use crate::Event;
     use super::*;
 
-    #[derive(Eq, PartialEq, Ord, PartialOrd, Copy, Clone)]
+    #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone)]
     struct SimTime {
         time: u32,
     }
 
+    #[derive(Debug)]
     struct SimState {
         executed_event_values: Vec<u32>,
         complete: bool
