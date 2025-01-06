@@ -4,10 +4,12 @@ use std::cmp::{Ordering, Reverse};
 use std::collections::BinaryHeap;
 use std::fmt::Debug;
 
+pub trait SimTime: Ord + Clone + std::fmt::Debug {}
+
 pub trait Event<State, Time>
 where
     State: SimState<Time>,
-    Time: Ord + Clone + Debug,
+    Time: SimTime,
 {
     fn execute(&mut self, simulation_state: &mut State, event_queue: &mut EventQueue<State, Time>) -> Result<(), crate::Error>;
 }
@@ -16,7 +18,7 @@ where
 pub struct EventQueue<State, Time>
 where
     State: SimState<Time>,
-    Time: Ord + Clone + Debug,
+    Time: SimTime,
 {
     events: BinaryHeap<Reverse<EventHolder<State, Time>>>,
     last_execution_time: Time,
@@ -25,7 +27,7 @@ where
 impl<State, Time> EventQueue<State, Time>
 where
     State: SimState<Time>,
-    Time: Ord + Clone + Debug,
+    Time: SimTime,
 {
     pub(crate) fn new(start_time: Time) -> Self {
         Self {
@@ -81,7 +83,7 @@ where
 impl<State, Time> std::fmt::Display for EventQueue<State, Time>
 where
     State: SimState<Time>,
-    Time: Ord + Clone + Debug,
+    Time: SimTime,
 {
     fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(formatter, "EventQueue with {} scheduled events at current time {:?}", self.events.len(), self.last_execution_time)
@@ -91,7 +93,7 @@ where
 struct EventHolder<State, Time>
 where
     State: SimState<Time>,
-    Time: Ord + Clone + Debug,
+    Time: SimTime,
 {
     execution_time: Time,
     event: Box<dyn Event<State, Time>>,
@@ -100,7 +102,7 @@ where
 impl<State, Time> Debug for EventHolder<State, Time>
 where
     State: SimState<Time>,
-    Time: Ord + Clone + Debug,
+    Time: SimTime,
 {
     fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(formatter, "dynamic event scheduled at time {:?}", self.execution_time)
@@ -110,7 +112,7 @@ where
 impl<State, Time> PartialEq<Self> for EventHolder<State, Time>
 where
     State: SimState<Time>,
-    Time: Ord + Clone + Debug,
+    Time: SimTime,
 {
     fn eq(&self, other: &Self) -> bool {
         self.execution_time == other.execution_time
@@ -120,13 +122,13 @@ where
 impl<State, Time> Eq for EventHolder<State, Time>
 where
     State: SimState<Time>,
-    Time: Ord + Clone + Debug,
+    Time: SimTime,
 {}
 
 impl<State, Time> PartialOrd<Self> for EventHolder<State, Time>
 where
     State: SimState<Time>,
-    Time: Ord + Clone + Debug,
+    Time: SimTime,
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self.execution_time.partial_cmp(&other.execution_time)
@@ -136,7 +138,7 @@ where
 impl<State, Time> Ord for EventHolder<State, Time>
 where
     State: SimState<Time>,
-    Time: Ord + Clone + Debug,
+    Time: SimTime,
 {
     fn cmp(&self, other: &Self) -> Ordering {
         self.execution_time.cmp(&other.execution_time)
@@ -148,22 +150,24 @@ mod tests {
     use super::*;
 
     #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone)]
-    struct SimTime {
+    struct Time {
         time: i32,
     }
+
+    impl SimTime for Time {}
 
     #[derive(Debug)]
     struct State {
         executed_event_values: Vec<i32>,
     }
-    impl SimState<SimTime> for State {}
+    impl SimState<Time> for State {}
 
     struct TestEvent {
         value: i32,
     }
 
-    impl Event<State, SimTime> for TestEvent {
-        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, SimTime>) -> Result<(), crate::Error> {
+    impl Event<State, Time> for TestEvent {
+        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, Time>) -> Result<(), crate::Error> {
             simulation_state.executed_event_values.push(self.value);
             Ok(())
         }
@@ -172,10 +176,10 @@ mod tests {
     #[test]
     fn execution_time_ascends() {
         let mut state = State { executed_event_values: Vec::with_capacity(3) };
-        let mut queue = EventQueue::new(SimTime { time: 0 });
-        queue.schedule(TestEvent { value: 1 }, SimTime { time: 1 }).unwrap();
-        queue.schedule(TestEvent { value: 2 }, SimTime { time: 3 }).unwrap();
-        queue.schedule(TestEvent { value: 3 }, SimTime { time: 2 }).unwrap();
+        let mut queue = EventQueue::new(Time { time: 0 });
+        queue.schedule(TestEvent { value: 1 }, Time { time: 1 }).unwrap();
+        queue.schedule(TestEvent { value: 2 }, Time { time: 3 }).unwrap();
+        queue.schedule(TestEvent { value: 3 }, Time { time: 2 }).unwrap();
         let expected = vec![1, 3, 2];
 
         while let Some(mut event) = queue.get_next() {
@@ -187,19 +191,19 @@ mod tests {
 
     #[test]
     fn schedule_fails_if_given_invalid_execution_time() {
-        let mut queue = EventQueue::new(SimTime { time: 0 });
-        let result = queue.schedule(TestEvent { value: 0 }, SimTime { time: -1 });
+        let mut queue = EventQueue::new(Time { time: 0 });
+        let result = queue.schedule(TestEvent { value: 0 }, Time { time: -1 });
         assert!(result.is_err(), "queue failed to reject event scheduled for the past");
         assert_eq!(crate::Error::BackInTime, result.err().unwrap(), "queue returned unexpected error type");
     }
 
     #[test]
     fn unsafe_schedulers_allow_time_to_reverse() {
-        let mut queue = EventQueue::new(SimTime { time: 0 });
+        let mut queue = EventQueue::new(Time { time: 0 });
         unsafe {
-            queue.schedule_unchecked(TestEvent { value: 1 }, SimTime { time: -1 });
+            queue.schedule_unchecked(TestEvent { value: 1 }, Time { time: -1 });
         }
         queue.get_next().unwrap();
-        assert_eq!(SimTime { time: -1 }, queue.current_time(), "current time did not update when popping event scheduled in the past");
+        assert_eq!(Time { time: -1 }, queue.current_time(), "current time did not update when popping event scheduled in the past");
     }
 }
