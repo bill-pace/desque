@@ -1,5 +1,11 @@
-use crate::State;
 use crate::EventQueue;
+
+pub trait State {
+    fn is_complete(&self) -> bool {
+        false
+    }
+}
+
 
 pub struct Simulation<SimState, Time>
 where
