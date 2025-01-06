@@ -12,7 +12,7 @@ where
     fn execute(&mut self, simulation_state: &mut SimState, event_queue: &mut EventQueue<SimState, Time>) -> Result<(), crate::Error>;
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct EventQueue<SimState, Time>
 where
     SimState: State,
@@ -78,7 +78,7 @@ where
     }
 }
 
-impl<SimState, Time> Debug for EventQueue<SimState, Time>
+impl<SimState, Time> std::fmt::Display for EventQueue<SimState, Time>
 where
     SimState: State,
     Time: Ord + Clone + Debug,
@@ -95,6 +95,16 @@ where
 {
     execution_time: Time,
     event: Box<dyn Event<SimState, Time>>,
+}
+
+impl<SimState, Time> Debug for EventHolder<SimState, Time>
+where
+    SimState: State,
+    Time: Ord + Clone + Debug,
+{
+    fn fmt(&self, formatter: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        write!(formatter, "dynamic event scheduled at time {:?}", self.execution_time)
+    }
 }
 
 impl<SimState, Time> PartialEq<Self> for EventHolder<SimState, Time>
