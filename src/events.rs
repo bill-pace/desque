@@ -83,7 +83,7 @@ where
     SimState: State,
     Time: Ord + Clone + Debug,
 {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(formatter, "EventQueue with {} scheduled events at current time {:?}", self.events.len(), self.last_execution_time)
     }
 }
@@ -102,7 +102,7 @@ where
     SimState: State,
     Time: Ord + Clone + Debug,
 {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(formatter, "dynamic event scheduled at time {:?}", self.execution_time)
     }
 }
