@@ -130,12 +130,12 @@ where
             return Err(crate::Error::BackInTime);
         }
 
-        let count = self.increment_event_count();
-        self.events.push(Reverse(EventHolder {
-            execution_time: time,
-            event: Box::new(event),
-            insertion_sequence: count,
-        }));
+        // SAFETY: we've just checked that the desired execution time is either
+        // Equal or Greater when compared to the current clock time, so it'll
+        // be fine to add to the queue
+        unsafe {
+            self.schedule_unchecked(event, time);
+        }
         Ok(())
     }
 
@@ -169,12 +169,12 @@ where
             return Err(crate::Error::BackInTime);
         }
 
-        let count = self.increment_event_count();
-        self.events.push(Reverse(EventHolder {
-            execution_time: time,
-            event,
-            insertion_sequence: count,
-        }));
+        // SAFETY: we've just checked that the desired execution time is either
+        // Equal or Greater when compared to the current clock time, so it'll
+        // be fine to add to the queue
+        unsafe {
+            self.schedule_unchecked_from_boxed(event, time);
+        }
         Ok(())
     }
 
