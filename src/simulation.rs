@@ -93,16 +93,19 @@ where
     ///     1. If an error is returned, forward it as-is to the caller.
     ///     2. Otherwise, go back to step 1.
     pub fn run(&mut self) -> crate::Result {
-        while !self.state.is_complete(self.event_queue.current_time()) {
+        loop {
+            if self.state.is_complete(self.event_queue.current_time()) {
+                return Ok(())
+            }
+
             let next_event = self.event_queue.get_next();
             if next_event.is_none() {
-                break;
+                return Ok(())
             }
 
             let mut next_event = next_event.unwrap();
             next_event.execute(&mut self.state, &mut self.event_queue)?;
         }
-        Ok(())
     }
 }
 
