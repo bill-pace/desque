@@ -3,14 +3,49 @@ use crate::SimState;
 use std::cmp::{Ordering, Reverse};
 use std::collections::BinaryHeap;
 
-/// The type used for a simulation's clock.
+/// The type used for a simulation's clock, kept generic to
+/// support as many variations of clock as possible. This
+/// trait is a superset of Ord, Clone, and Debug with no
+/// additional requirements or functionality.
+///
+/// Your implementation of this trait should use the
+/// `std::comp::Ord` trait to account for not only the
+/// overall sequencing of events, but also any tie breaking
+/// that may be necessary in your use case. Note that events
+/// will be executed in ascending order of execution time,
+/// i.e. if `A.cmp(&B) == std::cmp::Ordering::Less` then event
+/// A will execute before event B.
+///
+/// The `std::clone::Clone` trait is required to enable the
+/// `create::EventQueue::current_time()` method to hand back
+/// a copy of the current time, protecting its own source of
+/// truth while allowing you to do whatever you need to do
+/// with your copy.
+///
+/// `std::fmt::Debug` is necessary only for the implementation
+/// of Debug on `crate::EventQueue`.
 pub trait SimTime: Ord + Clone + std::fmt::Debug {}
 
+/// A behavior or state change that occurs within a simulation.
+/// This trait has one required method that describes what
+/// happens when the implementing type executes. This trait is
+/// generic over the types used to represent simulation state
+/// and clock time to enable your implementations of each trait
+/// to work together within this framework.
 pub trait Event<State, Time>
 where
     State: SimState<Time>,
     Time: SimTime,
 {
+    /// Update the simulation according to the specific type of event. The simulation will invoke this method
+    /// during `crate::Simulation::run()` for each scheduled event in sequence. Exclusive access will be provided
+    /// to both the simulation's current state and the event queue, allowing for both mutation of the simulation's
+    /// state and scheduling of new events.
+    ///
+    /// This trait expects implementations of `execute()` to be fallible, and `crate::Simulation::run()` will
+    /// bubble any errors back up to the client as a `crate::Error::BadExecution`. Successful branches, as well as
+    /// infallible implementations, should simply return `Ok(())` to indicate to `crate::Simulation::run()` that
+    /// it may continue popping events from the queue.
     fn execute(&mut self, simulation_state: &mut State, event_queue: &mut EventQueue<State, Time>) -> crate::Result;
 }
 
