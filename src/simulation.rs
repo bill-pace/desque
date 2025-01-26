@@ -14,6 +14,11 @@ use std::fmt::{Debug, Formatter};
 /// method will always answer "yes," and so a simulation running
 /// with that implementation will continue until the event queue
 /// becomes empty.
+///
+/// Making this trait generic over the type used for clock time
+/// enables the `is_complete()` method to list an instance of
+/// that type as a parameter and have full access to the specific
+/// type in client implementations.
 pub trait SimState<Time>
 where Time: SimTime
 {
@@ -32,13 +37,31 @@ where Time: SimTime
     }
 }
 
+/// The defining struct for a discrete-event simulation in
+/// this crate. A Simulation owns both its state and its
+/// event queue, providing public access to each so clients
+/// can set up and tear down instances as needed - for
+/// example, scheduling initial events or writing the final
+/// state to output.
+///
+/// The expected workflow for a Simulation is:
+///
+/// 1. Initialize a struct that implements SimState.
+/// 2. Pass this struct and the start time to `new()`.
+/// 3. Schedule at least one initial event.
+/// 4. Call `run()`. Handle any error it might return.
+/// 5. Use the `state` field to finish processing the sim.
 #[derive(Debug)]
 pub struct Simulation<State, Time>
 where
     State: SimState<Time>,
     Time: SimTime,
 {
+    /// A priority queue of events that have been scheduled
+    /// to execute, ordered ascending by execution time.
     pub event_queue: EventQueue<State, Time>,
+    /// The current shared state of the Simulation. Exclusive
+    /// access will be granted to each event that executes.
     pub state: State,
 }
 
@@ -47,6 +70,9 @@ where
     State: SimState<Time>,
     Time: SimTime,
 {
+    /// Initialize a Simulation instance with the provided
+    /// starting state and an event queue with clock set
+    /// to the provided starting time.
     pub fn new(initial_state: State, start_time: Time) -> Self {
         Self {
             event_queue: EventQueue::new(start_time),
@@ -54,6 +80,18 @@ where
         }
     }
 
+    /// Execute events from the priority queue, one at a time,
+    /// in ascending order by execution time.
+    ///
+    /// Follows this loop:
+    ///
+    /// 1. Does `state.is_complete()` return true? If so, return `Ok(())`.
+    /// 2. Attempt to pop the next event from the queue. If there isn't
+    /// one, return `Ok(())`.
+    /// 3. Pass exclusive references to the `state` and `event_queue`
+    /// fields to `event.execute()`.
+    ///     1. If an error is returned, forward it as-is to the caller.
+    ///     2. Otherwise, go back to step 1.
     pub fn run(&mut self) -> crate::Result {
         while !self.state.is_complete(self.event_queue.current_time()) {
             let next_event = self.event_queue.get_next();
