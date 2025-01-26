@@ -1,3 +1,21 @@
+/// Types of errors that may be encountered while
+/// executing a simulation built with this framework.
+///
+/// The `BackInTime` variant originates from the
+/// safe interface of the `crate::EventQueue` to
+/// indicate that an event's scheduled execution
+/// time is prior to the queue's current time. This
+/// error likely corresponds to a logical bug on the
+/// client side, e.g. forgetting to add an offset to
+/// the current time when scheduling a new event.
+///
+/// The `BadExecution` variant originates from client
+/// code, providing a wrapper that can pass through
+/// `crate::Simulation::run()` in a type-safe manner.
+/// Invoking `std::error::Error::source()` on this
+/// variant will acquire a shared reference to the
+/// wrapped `std::error::Error` for handling on the
+/// client side.
 #[derive(Debug)]
 pub enum Error {
     BackInTime,
@@ -39,4 +57,7 @@ impl std::error::Error for Error {
     }
 }
 
+/// A type alias for `std::result::Result<(), crate::Error>`
+/// that simplifies the signatures of various functions in
+/// this crate.
 pub type Result = std::result::Result<(), Error>;
