@@ -18,7 +18,13 @@
 /// client side.
 #[derive(Debug)]
 pub enum Error {
+    /// The event queue rejected an event that would
+    /// have been scheduled for a time that has
+    /// already passed.
     BackInTime,
+    /// A client-generated error was encountered
+    /// while executing an event. Call `source()`
+    /// or unpack this value to handle it directly.
     BadExecution(Box<dyn std::error::Error>)
 }
 
