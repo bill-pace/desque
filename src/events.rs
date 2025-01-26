@@ -142,12 +142,14 @@ where
     /// Schedule the provided event at the specified time. Assumes that the provided
     /// time is valid in the context of the client's simulation.
     ///
-    /// SAFETY: While this method cannot trigger undefined behaviors, scheduling an
-    /// event for a time in the past is likely to be a logical bug in client code.
-    /// Generally, this method should only be invoked if the condition `time > clock`
-    /// is already enforced at the call site through some other means. For example,
-    /// adding a strictly positive offset to the current clock time to get the `time`
-    /// argument for the call.
+    /// ## Safety
+    ///
+    /// While this method cannot trigger undefined behaviors, scheduling an event
+    /// for a time in the past is likely to be a logical bug in client code. Generally,
+    /// this method should only be invoked if the condition `time > clock` is already
+    /// enforced at the call site through some other means. For example, adding a
+    /// strictly positive offset to the current clock time to get the `time` argument
+    /// for the call.
     pub unsafe fn schedule_unchecked<EventType>(&mut self, event: EventType, time: Time)
     where EventType: Event<State, Time> + 'static
     {
@@ -181,12 +183,14 @@ where
     /// Schedule the provided event at the specified time. Assumes that the provided
     /// time is valid in the context of the client's simulation.
     ///
-    /// SAFETY: While this method cannot trigger undefined behaviors, scheduling an
-    /// event for a time in the past is likely to be a logical bug in client code.
-    /// Generally, this method should only be invoked if the condition `time > clock`
-    /// is already enforced at the call site through some other means. For example,
-    /// adding a strictly positive offset to the current clock time to get the `time`
-    /// argument for the call.
+    /// ## Safety
+    ///
+    /// While this method cannot trigger undefined behaviors, scheduling an event
+    /// for a time in the past is likely to be a logical bug in client code. Generally,
+    /// this method should only be invoked if the condition `time > clock` is already
+    /// enforced at the call site through some other means. For example, adding a
+    /// strictly positive offset to the current clock time to get the `time` argument
+    /// for the call.
     pub unsafe fn schedule_unchecked_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) {
         let count = self.increment_event_count();
         self.events.push(Reverse(EventHolder {
