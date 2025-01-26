@@ -61,20 +61,15 @@ mod tests {
     use crate::Event;
     use super::*;
 
-    #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone)]
-    struct Time {
-        time: u32,
-    }
-
-    impl SimTime for Time {}
+    impl SimTime for u32 {}
 
     #[derive(Debug)]
     struct State {
         executed_event_values: Vec<u32>,
         complete: bool
     }
-    impl SimState<Time> for State {
-        fn is_complete(&self, _: Time) -> bool {
+    impl SimState<u32> for State {
+        fn is_complete(&self, _: u32) -> bool {
             self.complete
         }
     }
@@ -83,8 +78,8 @@ mod tests {
         value: u32,
     }
 
-    impl Event<State, Time> for TestEvent {
-        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, Time>) -> crate::Result {
+    impl Event<State, u32> for TestEvent {
+        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, u32>) -> crate::Result {
             simulation_state.executed_event_values.push(self.value);
             Ok(())
         }
@@ -92,20 +87,20 @@ mod tests {
 
     struct CompletionEvent {}
 
-    impl Event<State, Time> for CompletionEvent {
-        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, Time>) -> crate::Result {
+    impl Event<State, u32> for CompletionEvent {
+        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, u32>) -> crate::Result {
             simulation_state.complete = true;
             Ok(())
         }
     }
 
-    fn setup() -> Simulation<State, Time> {
+    fn setup() -> Simulation<State, u32> {
         let mut sim = Simulation::new(
             State {
                 executed_event_values: Vec::with_capacity(3),
                 complete: false,
             },
-            Time { time: 0 },
+            0,
         );
 
         let events: [TestEvent; 3] = [
@@ -115,7 +110,7 @@ mod tests {
         ];
 
         for (i, event) in events.into_iter().enumerate() {
-            sim.event_queue.schedule(event, Time { time: 2 * i as u32 }).unwrap();
+            sim.event_queue.schedule(event, 2 * i as u32).unwrap();
         }
         sim
     }
@@ -132,7 +127,7 @@ mod tests {
     #[test]
     fn simulation_stops_with_events_still_in_queue() {
         let mut sim = setup();
-        sim.event_queue.schedule_from_boxed(Box::new(CompletionEvent {}), Time { time: 3 }).unwrap();
+        sim.event_queue.schedule_from_boxed(Box::new(CompletionEvent {}), 3).unwrap();
         sim.run().unwrap();
 
         let expected = vec![1, 3];
