@@ -2,9 +2,31 @@ use crate::{EventQueue, SimTime};
 
 use std::fmt::{Debug, Formatter};
 
+/// The type used to represent a simulation's overall state
+/// which may include to-date summary statistics, collections
+/// of simulated entities, terrain maps, historical records of
+/// simulated events, or whatever else is necessary to describe
+/// the real-world process or phenomenon in a program.
+///
+/// This trait has only one method, which provides a way for the
+/// `crate::Simulation::run()` method to ask whether it should
+/// continue executing events. The default implementation of this
+/// method will always answer "yes," and so a simulation running
+/// with that implementation will continue until the event queue
+/// becomes empty.
 pub trait SimState<Time>
 where Time: SimTime
 {
+    /// Reports whether the simulation has run to completion.
+    /// This method will be invoked in `crate::Simulation::run()`
+    /// before popping each event off the queue: `true` indicates
+    /// that the simulation is finished and that `run()` should
+    /// break out of its loop, whereas `false` means that `run()`
+    /// should continue with the next scheduled event.
+    ///
+    /// The default implementation always returns false, which
+    /// results in the simulation continuing until the event
+    /// queue empties out.
     fn is_complete(&self, _current_time: Time) -> bool {
         false
     }
