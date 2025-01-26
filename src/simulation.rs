@@ -140,8 +140,6 @@ mod tests {
     use crate::Event;
     use super::*;
 
-    impl SimTime for u32 {}
-
     #[derive(Debug)]
     struct State {
         executed_event_values: Vec<u32>,

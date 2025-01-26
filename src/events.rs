@@ -24,7 +24,26 @@ use std::collections::BinaryHeap;
 ///
 /// `std::fmt::Debug` is necessary only for the implementation
 /// of Debug on `crate::EventQueue`.
+///
+/// Implementations are provided for integral builtin types,
+/// but not for floating-point builtin types as the latter do
+/// not implement `Ord`. If you wish to use either f32 or f64
+/// as your SimTime, you will need to wrap them in a type that
+/// guarantees full ordering.
 pub trait SimTime: Ord + Clone + std::fmt::Debug {}
+
+impl SimTime for u8 {}
+impl SimTime for u16 {}
+impl SimTime for u32 {}
+impl SimTime for u64 {}
+impl SimTime for u128 {}
+impl SimTime for usize {}
+impl SimTime for i8 {}
+impl SimTime for i16 {}
+impl SimTime for i32 {}
+impl SimTime for i64 {}
+impl SimTime for i128 {}
+impl SimTime for isize {}
 
 /// A behavior or state change that occurs within a simulation.
 /// This trait has one required method that describes what
@@ -331,8 +350,6 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    impl SimTime for i32 {}
 
     #[derive(Debug)]
     struct State {
