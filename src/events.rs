@@ -32,6 +32,12 @@ pub trait SimTime: Ord + Clone + std::fmt::Debug {}
 /// generic over the types used to represent simulation state
 /// and clock time to enable your implementations of each trait
 /// to work together within this framework.
+///
+/// Note that this crate does not directly support the notion of
+/// interrupting events, so if you need that functionality then
+/// you may wish to extend this trait or to otherwise provide a
+/// means for your interruptible events to identify whether they
+/// should execute when popped from the queue.
 pub trait Event<State, Time>
 where
     State: SimState<Time>,
@@ -46,9 +52,46 @@ where
     /// bubble any errors back up to the client as a `crate::Error::BadExecution`. Successful branches, as well as
     /// infallible implementations, should simply return `Ok(())` to indicate to `crate::Simulation::run()` that
     /// it may continue popping events from the queue.
+    ///
+    /// Note that the simulation's  clock time, accessible on the `event_queue` parameter, will update before
+    /// invoking this method.
     fn execute(&mut self, simulation_state: &mut State, event_queue: &mut EventQueue<State, Time>) -> crate::Result;
 }
 
+/// The priority queue of scheduled events. Events will execute
+/// in ascending order of execution time, with ties broken by
+/// the order in which they were pushed onto the queue. This
+/// tiebreaker is in addition to any built-in to the
+/// implementation of `crate::SimTime` used for the clock as
+/// a way to stabilize the observed order of execution.
+///
+/// An `EventQueue` enables several different interfaces for
+/// scheduling new events, but does not publicly support
+/// popping; popping events from the queue only occurs during
+/// `crate::Simulation::run()`.
+///
+/// The safe methods provided for scheduling new events will
+/// compare the desired execution time against the current
+/// clock time. Scheduling an event for a time that is already
+/// past will result in a `crate::Error::BackInTime` without
+/// modifying the queue. This error indicates that client code
+/// probably has a logical error, as rewinding the clock in a
+/// discrete-event simulation should be very rare.
+///
+/// The similar unsafe methods skip the check against the
+/// current clock time, modifying the underlying queue on the
+/// assumption that client code provided the correct execution
+/// time for the event. No undefined behavior can occur as a
+/// result of using these methods, but improper usage may lead
+/// to logical errors that are difficult to debug, infinite
+/// loops, inconsistencies in the simulation state, or other
+/// problems that warrant an explicit "pay attention here"
+/// marker on call sites.
+///
+/// This struct is generic over the type used to represent
+/// clock time for the sake of tracking the current time,
+/// as well over the type used to represent simulation state
+/// so that it can work with appropriate event types.
 #[derive(Debug, Default)]
 pub struct EventQueue<State, Time>
 where
@@ -65,6 +108,8 @@ where
     State: SimState<Time>,
     Time: SimTime,
 {
+    /// Construct a new EventQueue with no scheduled events
+    /// and a clock initialized to the provided time.
     pub(crate) fn new(start_time: Time) -> Self {
         Self {
             events: BinaryHeap::default(),
@@ -73,6 +118,11 @@ where
         }
     }
 
+    /// Schedule the provided event at the specified time.
+    /// If `time` is less than the current clock time on
+    /// `self`, returns a `crate::Error::BackInTime` to
+    /// indicate the likely presence of a logical bug at
+    /// the call site, with no modifications to the queue.
     pub fn schedule<EventType>(&mut self, event: EventType, time: Time) -> crate::Result
     where EventType: Event<State, Time> + 'static
     {
@@ -89,6 +139,15 @@ where
         Ok(())
     }
 
+    /// Schedule the provided event at the specified time. Assumes that the provided
+    /// time is valid in the context of the client's simulation.
+    ///
+    /// SAFETY: While this method cannot trigger undefined behaviors, scheduling an
+    /// event for a time in the past is likely to be a logical bug in client code.
+    /// Generally, this method should only be invoked if the condition `time > clock`
+    /// is already enforced at the call site through some other means. For example,
+    /// adding a strictly positive offset to the current clock time to get the `time`
+    /// argument for the call.
     pub unsafe fn schedule_unchecked<EventType>(&mut self, event: EventType, time: Time)
     where EventType: Event<State, Time> + 'static
     {
@@ -100,6 +159,11 @@ where
         }));
     }
 
+    /// Schedule the provided event at the specified time.
+    /// If `time` is less than the current clock time on
+    /// `self`, returns a `crate::Error::BackInTime` to
+    /// indicate the likely presence of a logical bug at
+    /// the call site, with no modifications to the queue.
     pub fn schedule_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) -> crate::Result {
         if time < self.last_execution_time {
             return Err(crate::Error::BackInTime);
@@ -114,6 +178,15 @@ where
         Ok(())
     }
 
+    /// Schedule the provided event at the specified time. Assumes that the provided
+    /// time is valid in the context of the client's simulation.
+    ///
+    /// SAFETY: While this method cannot trigger undefined behaviors, scheduling an
+    /// event for a time in the past is likely to be a logical bug in client code.
+    /// Generally, this method should only be invoked if the condition `time > clock`
+    /// is already enforced at the call site through some other means. For example,
+    /// adding a strictly positive offset to the current clock time to get the `time`
+    /// argument for the call.
     pub unsafe fn schedule_unchecked_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) {
         let count = self.increment_event_count();
         self.events.push(Reverse(EventHolder {
@@ -123,12 +196,17 @@ where
         }));
     }
 
+    /// Helper function to make sure incrementing the
+    /// internal count of added events occurs the
+    /// same way across all scheduling methods.
     fn increment_event_count(&mut self) -> usize {
         let count = self.events_added;
         self.events_added += 1;
         count
     }
 
+    /// Crate-internal function to pop an event from the queue. Updates the
+    /// current clock time to match the execution time of the popped event.
     pub(crate) fn get_next(&mut self) -> Option<Box<dyn Event<State, Time>>> {
         if let Some(event_holder) = self.events.pop() {
             self.last_execution_time = event_holder.0.execution_time;
@@ -138,6 +216,7 @@ where
         }
     }
 
+    /// Clones the simulation's current clock time.
     pub fn current_time(&self) -> Time {
         self.last_execution_time.clone()
     }
