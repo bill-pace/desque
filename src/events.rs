@@ -53,7 +53,7 @@ where
     /// infallible implementations, should simply return `Ok(())` to indicate to `crate::Simulation::run()` that
     /// it may continue popping events from the queue.
     ///
-    /// Note that the simulation's  clock time, accessible on the `event_queue` parameter, will update before
+    /// Note that the simulation's clock time, accessible on the `event_queue` parameter, will update before
     /// invoking this method.
     fn execute(&mut self, simulation_state: &mut State, event_queue: &mut EventQueue<State, Time>) -> crate::Result;
 }
@@ -232,6 +232,17 @@ where
     }
 }
 
+/// Helper struct for the event queue. This struct
+/// holds a Box to the event itself alongside the
+/// data necessary to sort events within the priority
+/// queue, namely the execution time and a record of
+/// the event's insertion sequence.
+///
+/// The implementation of `std::cmp::Ord` on this
+/// struct cares first about the execution time,
+/// giving full control of event ordering to client
+/// code, comparing the insertion sequences only
+/// to break ties.
 struct EventHolder<State, Time>
 where
     State: SimState<Time>,
