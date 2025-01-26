@@ -3,4 +3,6 @@ name = "des-framework"
 version = "0.1.0"
 edition = "2021"
 
-[dependencies]
+[dev-dependencies]
+rand = "0.8"
+rand_xorshift = "0.3.0"
