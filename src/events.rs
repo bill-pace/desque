@@ -55,6 +55,16 @@ where
     ///
     /// Note that the simulation's clock time, accessible on the `event_queue` parameter, will update before
     /// invoking this method.
+    ///
+    /// ## Expected Errors
+    ///
+    /// This method signature allows for the possibility of encountering error conditions at runtime. Of particular
+    /// note here, the `crate::Error::BadExecution` variant wraps a `dyn std::error::Error` and so enables client
+    /// implementations of this method to effectively shut down a simulation when encountering any problems that
+    /// cannot be handled at runtime without causing a panic or otherwise losing information about the error
+    /// somewhere deep in the event queue.
+    ///
+    /// See `crate::Error` for more details on the variants of this error enum.
     fn execute(&mut self, simulation_state: &mut State, event_queue: &mut EventQueue<State, Time>) -> crate::Result;
 }
 
@@ -65,10 +75,17 @@ where
 /// implementation of `crate::SimTime` used for the clock as
 /// a way to stabilize the observed order of execution.
 ///
-/// An `EventQueue` enables several different interfaces for
+/// This struct is generic over the type used to represent
+/// clock time for the sake of tracking the current time,
+/// as well over the type used to represent simulation state
+/// so that it can work with appropriate event types.
+///
+/// An `EventQueue` provides several different methods for
 /// scheduling new events, but does not publicly support
 /// popping; popping events from the queue only occurs during
 /// `crate::Simulation::run()`.
+///
+/// ## Safety
 ///
 /// The safe methods provided for scheduling new events will
 /// compare the desired execution time against the current
@@ -87,11 +104,7 @@ where
 /// loops, inconsistencies in the simulation state, or other
 /// problems that warrant an explicit "pay attention here"
 /// marker on call sites.
-///
-/// This struct is generic over the type used to represent
-/// clock time for the sake of tracking the current time,
-/// as well over the type used to represent simulation state
-/// so that it can work with appropriate event types.
+
 #[derive(Debug, Default)]
 pub struct EventQueue<State, Time>
 where
@@ -119,6 +132,9 @@ where
     }
 
     /// Schedule the provided event at the specified time.
+    ///
+    /// ## Errors
+    ///
     /// If `time` is less than the current clock time on
     /// `self`, returns a `crate::Error::BackInTime` to
     /// indicate the likely presence of a logical bug at
@@ -157,6 +173,9 @@ where
     }
 
     /// Schedule the provided event at the specified time.
+    ///
+    /// ## Errors
+    ///
     /// If `time` is less than the current clock time on
     /// `self`, returns a `crate::Error::BackInTime` to
     /// indicate the likely presence of a logical bug at
