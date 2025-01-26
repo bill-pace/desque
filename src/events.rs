@@ -153,12 +153,7 @@ where
     pub unsafe fn schedule_unchecked<EventType>(&mut self, event: EventType, time: Time)
     where EventType: Event<State, Time> + 'static
     {
-        let count = self.increment_event_count();
-        self.events.push(Reverse(EventHolder {
-            execution_time: time,
-            event: Box::new(event),
-            insertion_sequence: count,
-        }));
+        self.schedule_unchecked_from_boxed(Box::new(event), time);
     }
 
     /// Schedule the provided event at the specified time.
