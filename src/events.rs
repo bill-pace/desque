@@ -3,6 +3,7 @@ use crate::SimState;
 use std::cmp::{Ordering, Reverse};
 use std::collections::BinaryHeap;
 
+/// The type used for a simulation's clock.
 pub trait SimTime: Ord + Clone + std::fmt::Debug {}
 
 pub trait Event<State, Time>
@@ -186,25 +187,20 @@ where
 mod tests {
     use super::*;
 
-    #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone)]
-    struct Time {
-        time: i32,
-    }
-
-    impl SimTime for Time {}
+    impl SimTime for i32 {}
 
     #[derive(Debug)]
     struct State {
         executed_event_values: Vec<i32>,
     }
-    impl SimState<Time> for State {}
+    impl SimState<i32> for State {}
 
     struct TestEvent {
         value: i32,
     }
 
-    impl Event<State, Time> for TestEvent {
-        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, Time>) -> crate::Result {
+    impl Event<State, i32> for TestEvent {
+        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, i32>) -> crate::Result {
             simulation_state.executed_event_values.push(self.value);
             Ok(())
         }
@@ -213,10 +209,10 @@ mod tests {
     #[test]
     fn execution_time_ascends() {
         let mut state = State { executed_event_values: Vec::with_capacity(3) };
-        let mut queue = EventQueue::new(Time { time: 0 });
-        queue.schedule(TestEvent { value: 1 }, Time { time: 1 }).unwrap();
-        queue.schedule(TestEvent { value: 2 }, Time { time: 3 }).unwrap();
-        queue.schedule(TestEvent { value: 3 }, Time { time: 2 }).unwrap();
+        let mut queue = EventQueue::new(0);
+        queue.schedule(TestEvent { value: 1 }, 1).unwrap();
+        queue.schedule(TestEvent { value: 2 }, 3).unwrap();
+        queue.schedule(TestEvent { value: 3 }, 2).unwrap();
         let expected = vec![1, 3, 2];
 
         while let Some(mut event) = queue.get_next() {
@@ -228,30 +224,30 @@ mod tests {
 
     #[test]
     fn schedule_fails_if_given_invalid_execution_time() {
-        let mut queue = EventQueue::new(Time { time: 0 });
-        let result = queue.schedule(TestEvent { value: 0 }, Time { time: -1 });
+        let mut queue = EventQueue::new(0);
+        let result = queue.schedule(TestEvent { value: 0 }, -1);
         assert!(result.is_err(), "queue failed to reject event scheduled for the past");
         assert_eq!(crate::Error::BackInTime, result.err().unwrap(), "queue returned unexpected error type");
     }
 
     #[test]
     fn unsafe_schedulers_allow_time_to_reverse() {
-        let mut queue = EventQueue::new(Time { time: 0 });
+        let mut queue = EventQueue::new(0);
         unsafe {
-            queue.schedule_unchecked(TestEvent { value: 1 }, Time { time: -1 });
+            queue.schedule_unchecked(TestEvent { value: 1 }, -1);
         }
         queue.get_next().unwrap();
-        assert_eq!(Time { time: -1 }, queue.current_time(), "current time did not update when popping event scheduled in the past");
+        assert_eq!(-1, queue.current_time(), "current time did not update when popping event scheduled in the past");
     }
 
     #[test]
     fn insertion_sequence_breaks_ties_in_execution_time() {
         const NUM_EVENTS: i32 = 10;
         let mut state = State { executed_event_values: Vec::with_capacity(NUM_EVENTS as usize) };
-        let mut queue = EventQueue::new(Time { time: 0 });
+        let mut queue = EventQueue::new(0);
 
         for copy_id in 0..NUM_EVENTS {
-            queue.schedule(TestEvent { value: copy_id }, Time { time: 1 }).unwrap();
+            queue.schedule(TestEvent { value: copy_id }, 1).unwrap();
         }
         while let Some(mut event) = queue.get_next() {
             event.execute(&mut state, &mut queue).unwrap();
