@@ -1,17 +1,44 @@
-//! TODO doc comment
+//! A G/G/1 queue that prints arrival and service event logs
+//! to stdout. Arrival times are uniformly distributed from
+//! zero to sixty minutes, and services times are uniformly
+//! distributed from zero to forty minutes.
+//!
+//! The simulation runs for nine hours before terminating,
+//! and so could represent a small, service-oriented
+//! business's typical workday.
+//!
+//! Arrival events check whether the server is currently
+//! busy. If so, the arriving customer gets in line. If
+//! not, the arriving customer goes directly to the server
+//! and a Service event is scheduled. Either way, a new
+//! Arrival event is also scheduled.
+//!
+//! Service events check the current size of the queue.
+//! If nonzero, then the queue size is decremented and
+//! a new Service event scheduled for the next customer.
+//!
+//! Time is represented as `usize` for simplicity.
 
 use des_framework::*;
 use rand::{Rng, SeedableRng};
 use rand_xorshift::XorShiftRng;
 
-struct State {
+/// Tracks the current length of the queue, whether
+/// the server is busy or idle, the desired end time
+/// of the simulation, and the random number
+/// generator from which arrival and service times
+/// are drawn.
+struct Store {
     queue_length: usize,
     server_busy: bool,
     end_time: usize,
     rng: XorShiftRng,
 }
 
-impl State {
+impl Store {
+    /// Creates an empty store with idle server,
+    /// logs the desired end time, and seeds
+    /// a random-number generator.
     fn new(end_time: usize) -> Self {
         Self {
             queue_length: 0,
@@ -22,24 +49,34 @@ impl State {
     }
 }
 
-impl SimState<usize> for State {
+impl SimState<usize> for Store {
+    /// Checks whether the current simulation time is
+    /// at least the intended end time.
     fn is_complete(&self, current_time: usize) -> bool {
         current_time >= self.end_time
     }
 }
 
+/// Handles the arrival of a customer to the store's
+/// checkout queue.
 struct ArrivalEvent {}
 
 impl ArrivalEvent {
-    fn schedule(simulation_state: &mut State, event_queue: &mut EventQueue<State, usize>) -> Result {
+    /// Draw a uniform random number from the range [0, 60] to produce the next
+    /// arrival time and place a new ArrivalEvent on the queue for that time.
+    fn schedule(simulation_state: &mut Store, event_queue: &mut EventQueue<Store, usize>) -> Result {
         let next_arrival_delay = simulation_state.rng.gen_range(0..=60);
         let next_arrival_time = event_queue.current_time() + next_arrival_delay;
         event_queue.schedule(ArrivalEvent {}, next_arrival_time)
     }
 }
 
-impl Event<State, usize> for ArrivalEvent {
-    fn execute(&mut self, simulation_state: &mut State, event_queue: &mut EventQueue<State, usize>) -> Result {
+impl Event<Store, usize> for ArrivalEvent {
+    /// If server is idle, mark it busy and schedule a service event.
+    /// Otherwise, increment the queue length.
+    ///
+    /// Regardless, schedule a new ArrivalEvent.
+    fn execute(&mut self, simulation_state: &mut Store, event_queue: &mut EventQueue<Store, usize>) -> Result {
         println!("Handling customer arrival at time {}...", event_queue.current_time());
 
         if simulation_state.server_busy {
@@ -59,18 +96,25 @@ impl Event<State, usize> for ArrivalEvent {
     }
 }
 
+/// Handle the completion of a customer's service time
+/// at the counter.
 struct ServiceEvent {}
 
 impl ServiceEvent {
-    fn schedule(simulation_state: &mut State, event_queue: &mut EventQueue<State, usize>) -> Result {
+    /// Draw a uniform random number from the range [0, 40] to produce the next
+    /// service time and place a new ServiceEvent on the queue for that time.
+    fn schedule(simulation_state: &mut Store, event_queue: &mut EventQueue<Store, usize>) -> Result {
         let service_length = simulation_state.rng.gen_range(0..=40);
         let service_completion_time = event_queue.current_time() + service_length;
         event_queue.schedule(ServiceEvent {}, service_completion_time)
     }
 }
 
-impl Event<State, usize> for ServiceEvent {
-    fn execute(&mut self, simulation_state: &mut State, event_queue: &mut EventQueue<State, usize>) -> Result {
+impl Event<Store, usize> for ServiceEvent {
+    /// If at least one other customer is in line, decrement the length of the line
+    /// and schedule a new ServiceEvent.
+    /// Otherwise, mark the server as idle.
+    fn execute(&mut self, simulation_state: &mut Store, event_queue: &mut EventQueue<Store, usize>) -> Result {
         println!(
             "Completed service for customer. Checking queue at time {}...",
             event_queue.current_time(),
@@ -92,9 +136,13 @@ impl Event<State, usize> for ServiceEvent {
     }
 }
 
+/// Initialize a store to be open from 8-5, then a simulation to
+/// start at 8. Schedule the first arrival event for a random time,
+/// from which all other events will be derived. Then, run the
+/// simulation - events will print to stdout as they execute.
 fn main() {
-    let state = State::new(540);
-    let mut sim = Simulation::new(state, 0);
+    let store = Store::new(540);
+    let mut sim = Simulation::new(store, 0);
     ArrivalEvent::schedule(&mut sim.state, &mut sim.event_queue).unwrap();
     sim.run().unwrap();
 }
