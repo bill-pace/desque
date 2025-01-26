@@ -80,12 +80,11 @@ where
             return Err(crate::Error::BackInTime);
         }
 
-        let num_added = self.events_added;
-        self.events_added += 1;
+        let count = self.increment_event_count();
         self.events.push(Reverse(EventHolder {
             execution_time: time,
             event: Box::new(event),
-            insertion_sequence: num_added,
+            insertion_sequence: count,
         }));
         Ok(())
     }
@@ -93,12 +92,11 @@ where
     pub unsafe fn schedule_unchecked<EventType>(&mut self, event: EventType, time: Time)
     where EventType: Event<State, Time> + 'static
     {
-        let num_added = self.events_added;
-        self.events_added += 1;
+        let count = self.increment_event_count();
         self.events.push(Reverse(EventHolder {
             execution_time: time,
             event: Box::new(event),
-            insertion_sequence: num_added,
+            insertion_sequence: count,
         }));
     }
 
@@ -107,24 +105,28 @@ where
             return Err(crate::Error::BackInTime);
         }
 
-        let num_added = self.events_added;
-        self.events_added += 1;
+        let count = self.increment_event_count();
         self.events.push(Reverse(EventHolder {
             execution_time: time,
             event,
-            insertion_sequence: num_added,
+            insertion_sequence: count,
         }));
         Ok(())
     }
 
     pub unsafe fn schedule_unchecked_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) {
-        let num_added = self.events_added;
-        self.events_added += 1;
+        let count = self.increment_event_count();
         self.events.push(Reverse(EventHolder {
             execution_time: time,
             event,
-            insertion_sequence: num_added,
+            insertion_sequence: count,
         }));
+    }
+
+    fn increment_event_count(&mut self) -> usize {
+        let count = self.events_added;
+        self.events_added += 1;
+        count
     }
 
     pub(crate) fn get_next(&mut self) -> Option<Box<dyn Event<State, Time>>> {
