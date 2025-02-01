@@ -1,4 +1,4 @@
-use crate::{EventQueue, SimTime};
+use crate::{Event, EventQueue, SimTime};
 
 use std::fmt::{Debug, Formatter};
 
@@ -51,6 +51,10 @@ where Time: SimTime
 /// 3. Schedule at least one initial event.
 /// 4. Call `run()`. Handle any error it might return.
 /// 5. Use the `state` field to finish processing the sim.
+///
+/// A Simulation also provides the same event-scheduling
+/// interface as its underlying queue for the purpose of
+/// making step 3 slightly simpler.
 #[derive(Debug)]
 pub struct Simulation<State, Time>
 where
@@ -122,6 +126,64 @@ where
             let mut next_event = next_event.unwrap();
             next_event.execute(&mut self.state, &mut self.event_queue)?;
         }
+    }
+
+    /// Schedule the provided event at the specified time.
+    ///
+    /// ## Errors
+    ///
+    /// If `time` is less than the current clock time on
+    /// `self`, returns a `crate::Error::BackInTime` to
+    /// indicate the likely presence of a logical bug at
+    /// the call site, with no modifications to the queue.
+    pub fn schedule<EventType>(&mut self, event: EventType, time: Time) -> crate::Result
+    where EventType: Event<State, Time> + 'static
+    {
+        self.event_queue.schedule(event, time)
+    }
+
+    /// Schedule the provided event at the specified time. Assumes that the provided
+    /// time is valid in the context of the client's simulation.
+    ///
+    /// ## Safety
+    ///
+    /// While this method cannot trigger undefined behaviors, scheduling an event
+    /// for a time in the past is likely to be a logical bug in client code. Generally,
+    /// this method should only be invoked if the condition `time > clock` is already
+    /// enforced at the call site through some other means. For example, adding a
+    /// strictly positive offset to the current clock time to get the `time` argument
+    /// for the call.
+    pub unsafe fn schedule_unchecked<EventType>(&mut self, event: EventType, time: Time)
+    where EventType: Event<State, Time> + 'static
+    {
+        self.event_queue.schedule_unchecked(event, time);
+    }
+
+    /// Schedule the provided event at the specified time.
+    ///
+    /// ## Errors
+    ///
+    /// If `time` is less than the current clock time on
+    /// `self`, returns a `crate::Error::BackInTime` to
+    /// indicate the likely presence of a logical bug at
+    /// the call site, with no modifications to the queue.
+    pub fn schedule_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) -> crate::Result {
+        self.event_queue.schedule_from_boxed(event, time)
+    }
+
+    /// Schedule the provided event at the specified time. Assumes that the provided
+    /// time is valid in the context of the client's simulation.
+    ///
+    /// ## Safety
+    ///
+    /// While this method cannot trigger undefined behaviors, scheduling an event
+    /// for a time in the past is likely to be a logical bug in client code. Generally,
+    /// this method should only be invoked if the condition `time > clock` is already
+    /// enforced at the call site through some other means. For example, adding a
+    /// strictly positive offset to the current clock time to get the `time` argument
+    /// for the call.
+    pub unsafe fn schedule_unchecked_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) {
+        self.event_queue.schedule_unchecked_from_boxed(event, time);
     }
 }
 
