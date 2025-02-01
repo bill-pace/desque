@@ -75,7 +75,7 @@ where
     /// Note that the simulation's clock time, accessible on the `event_queue` parameter, will update before
     /// invoking this method.
     ///
-    /// ## Expected Errors
+    /// # Expected Errors
     ///
     /// This method signature allows for the possibility of encountering error conditions at runtime. Of particular
     /// note here, the `crate::Error::BadExecution` variant wraps a `dyn std::error::Error` and so enables client
@@ -104,7 +104,7 @@ where
 /// popping; popping events from the queue only occurs during
 /// `crate::Simulation::run()`.
 ///
-/// ## Safety
+/// # Safety
 ///
 /// The safe methods provided for scheduling new events will
 /// compare the desired execution time against the current
@@ -152,7 +152,7 @@ where
 
     /// Schedule the provided event at the specified time.
     ///
-    /// ## Errors
+    /// # Errors
     ///
     /// If `time` is less than the current clock time on
     /// `self`, returns a `crate::Error::BackInTime` to
@@ -177,11 +177,11 @@ where
     /// Schedule the provided event at the specified time. Assumes that the provided
     /// time is valid in the context of the client's simulation.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// While this method cannot trigger undefined behaviors, scheduling an event
     /// for a time in the past is likely to be a logical bug in client code. Generally,
-    /// this method should only be invoked if the condition `time > clock` is already
+    /// this method should only be invoked if the condition `time >= clock` is already
     /// enforced at the call site through some other means. For example, adding a
     /// strictly positive offset to the current clock time to get the `time` argument
     /// for the call.
@@ -193,7 +193,7 @@ where
 
     /// Schedule the provided event at the specified time.
     ///
-    /// ## Errors
+    /// # Errors
     ///
     /// If `time` is less than the current clock time on
     /// `self`, returns a `crate::Error::BackInTime` to
@@ -216,11 +216,11 @@ where
     /// Schedule the provided event at the specified time. Assumes that the provided
     /// time is valid in the context of the client's simulation.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// While this method cannot trigger undefined behaviors, scheduling an event
     /// for a time in the past is likely to be a logical bug in client code. Generally,
-    /// this method should only be invoked if the condition `time > clock` is already
+    /// this method should only be invoked if the condition `time >= clock` is already
     /// enforced at the call site through some other means. For example, adding a
     /// strictly positive offset to the current clock time to get the `time` argument
     /// for the call.

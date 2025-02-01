@@ -97,7 +97,7 @@ where
     ///     1. If an error is returned, forward it as-is to the caller.
     ///     2. Otherwise, go back to step 1.
     ///
-    /// ## Errors
+    /// # Errors
     ///
     /// Errors may occur during execution of events, and if encountered
     /// here they will be passed back to the caller, unchanged. The two
@@ -130,7 +130,7 @@ where
 
     /// Schedule the provided event at the specified time.
     ///
-    /// ## Errors
+    /// # Errors
     ///
     /// If `time` is less than the current clock time on
     /// `self`, returns a `crate::Error::BackInTime` to
@@ -145,11 +145,11 @@ where
     /// Schedule the provided event at the specified time. Assumes that the provided
     /// time is valid in the context of the client's simulation.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// While this method cannot trigger undefined behaviors, scheduling an event
     /// for a time in the past is likely to be a logical bug in client code. Generally,
-    /// this method should only be invoked if the condition `time > clock` is already
+    /// this method should only be invoked if the condition `time >= clock` is already
     /// enforced at the call site through some other means. For example, adding a
     /// strictly positive offset to the current clock time to get the `time` argument
     /// for the call.
@@ -161,7 +161,7 @@ where
 
     /// Schedule the provided event at the specified time.
     ///
-    /// ## Errors
+    /// # Errors
     ///
     /// If `time` is less than the current clock time on
     /// `self`, returns a `crate::Error::BackInTime` to
@@ -174,11 +174,11 @@ where
     /// Schedule the provided event at the specified time. Assumes that the provided
     /// time is valid in the context of the client's simulation.
     ///
-    /// ## Safety
+    /// # Safety
     ///
     /// While this method cannot trigger undefined behaviors, scheduling an event
     /// for a time in the past is likely to be a logical bug in client code. Generally,
-    /// this method should only be invoked if the condition `time > clock` is already
+    /// this method should only be invoked if the condition `time >= clock` is already
     /// enforced at the call site through some other means. For example, adding a
     /// strictly positive offset to the current clock time to get the `time` argument
     /// for the call.
