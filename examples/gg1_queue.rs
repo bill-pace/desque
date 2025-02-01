@@ -44,7 +44,7 @@ impl Store {
             queue_length: 0,
             server_busy: false,
             end_time,
-            rng: XorShiftRng::from_rng(rand::thread_rng()).unwrap(),
+            rng: XorShiftRng::from_rng(&mut rand::rng()),
         }
     }
 }
@@ -65,7 +65,7 @@ impl ArrivalEvent {
     /// Draw a uniform random number from the range [0, 60] to produce the next
     /// arrival time and place a new ArrivalEvent on the queue for that time.
     fn schedule(simulation_state: &mut Store, event_queue: &mut EventQueue<Store, usize>) -> Result {
-        let next_arrival_delay = simulation_state.rng.gen_range(0..=60);
+        let next_arrival_delay = simulation_state.rng.random_range(0..=60);
         let next_arrival_time = event_queue.current_time() + next_arrival_delay;
         event_queue.schedule(ArrivalEvent {}, next_arrival_time)
     }
@@ -104,7 +104,7 @@ impl ServiceEvent {
     /// Draw a uniform random number from the range [0, 40] to produce the next
     /// service time and place a new ServiceEvent on the queue for that time.
     fn schedule(simulation_state: &mut Store, event_queue: &mut EventQueue<Store, usize>) -> Result {
-        let service_length = simulation_state.rng.gen_range(0..=40);
+        let service_length = simulation_state.rng.random_range(0..=40);
         let service_completion_time = event_queue.current_time() + service_length;
         event_queue.schedule(ServiceEvent {}, service_completion_time)
     }
