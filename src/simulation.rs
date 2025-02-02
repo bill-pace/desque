@@ -209,7 +209,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Event;
+    use crate::{Event, OkEvent};
 
     #[derive(Debug)]
     struct State {
@@ -235,10 +235,9 @@ mod tests {
 
     struct CompletionEvent {}
 
-    impl Event<State, u32> for CompletionEvent {
-        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, u32>) -> crate::Result {
+    impl OkEvent<State, u32> for CompletionEvent {
+        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, u32>) {
             simulation_state.complete = true;
-            Ok(())
         }
     }
 

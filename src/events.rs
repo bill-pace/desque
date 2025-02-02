@@ -1,4 +1,7 @@
+pub(crate) mod event_traits;
+
 use crate::SimState;
+use event_traits::Event;
 
 use std::cmp::{Ordering, Reverse};
 use std::collections::BinaryHeap;
@@ -44,48 +47,6 @@ impl SimTime for i32 {}
 impl SimTime for i64 {}
 impl SimTime for i128 {}
 impl SimTime for isize {}
-
-/// A behavior or state change that occurs within a simulation.
-/// This trait has one required method that describes what
-/// happens when the implementing type executes. This trait is
-/// generic over the types used to represent simulation state
-/// and clock time to enable your implementations of each trait
-/// to work together within this framework.
-///
-/// Note that this crate does not directly support the notion of
-/// interrupting events, so if you need that functionality then
-/// you may wish to extend this trait or to otherwise provide a
-/// means for your interruptible events to identify whether they
-/// should execute when popped from the queue.
-pub trait Event<State, Time>
-where
-    State: SimState<Time>,
-    Time: SimTime,
-{
-    /// Update the simulation according to the specific type of event. The simulation will invoke this method
-    /// during [`crate::Simulation::run()`] for each scheduled event in sequence. Exclusive access will be provided
-    /// to both the simulation's current state and the event queue, allowing for both mutation of the simulation's
-    /// state and scheduling of new events.
-    ///
-    /// This trait expects implementations of `execute()` to be fallible, and `crate::Simulation::run()` will
-    /// bubble any errors back up to the client as a [`crate::Error::BadExecution`]. Successful branches, as well as
-    /// infallible implementations, should simply return `Ok(())` to indicate to `crate::Simulation::run()` that
-    /// it may continue popping events from the queue.
-    ///
-    /// Note that the simulation's clock time, accessible on the `event_queue` parameter, will update before
-    /// invoking this method.
-    ///
-    /// # Errors
-    ///
-    /// This method signature allows for the possibility of encountering error conditions at runtime. Of particular
-    /// note here, the [`crate::Error::BadExecution`] variant wraps a `dyn std::error::Error` and so enables client
-    /// implementations of this method to effectively shut down a simulation when encountering any problems that
-    /// cannot be handled at runtime without causing a panic or otherwise losing information about the error
-    /// somewhere deep in the event queue.
-    ///
-    /// See [`crate::Error`] for more details on the variants of this error enum.
-    fn execute(&mut self, simulation_state: &mut State, event_queue: &mut EventQueue<State, Time>) -> crate::Result;
-}
 
 /// The priority queue of scheduled events. Events will execute
 /// in ascending order of execution time, with ties broken by
