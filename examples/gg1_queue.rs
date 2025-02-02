@@ -21,7 +21,7 @@
 
 use des_framework::*;
 use rand::{Rng, SeedableRng};
-use rand_xorshift::XorShiftRng;
+use rand_pcg::Pcg64;
 
 /// Tracks the current length of the queue, whether
 /// the server is busy or idle, the desired end time
@@ -32,7 +32,7 @@ struct Store {
     queue_length: usize,
     server_busy: bool,
     end_time: usize,
-    rng: XorShiftRng,
+    rng: Pcg64,
 }
 
 impl Store {
@@ -44,7 +44,7 @@ impl Store {
             queue_length: 0,
             server_busy: false,
             end_time,
-            rng: XorShiftRng::from_rng(&mut rand::rng()),
+            rng: Pcg64::from_rng(&mut rand::rng()),
         }
     }
 }
