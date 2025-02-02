@@ -45,6 +45,7 @@ impl PartialEq for Error {
 impl Eq for Error {}
 
 impl std::fmt::Display for Error {
+    #[allow(clippy::uninlined_format_args)] // compatibility with older Rust versions
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let descriptor = match self {
             Self::BackInTime => "event execution time is less than current simulation time".into(),

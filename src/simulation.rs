@@ -47,7 +47,7 @@ where
 ///
 /// The expected workflow for a Simulation is:
 ///
-/// 1. Initialize a struct that implements SimState.
+/// 1. Initialize a struct that implements `SimState`.
 /// 2. Pass this struct and the start time to `new()`.
 /// 3. Schedule at least one initial event.
 /// 4. Call `run()`. Handle any error it might return.
@@ -113,6 +113,9 @@ where
     ///    in a way that is type-safe to feed back through this method.
     ///    To handle the underlying error, either unpack the `BadExecution`
     ///    or call its `source()` method.
+    // the detected panic in here is a false alarm as the call to unwrap
+    // is immediately preceded by a check that the Option is Some
+    #[allow(clippy::missing_panics_doc)]
     pub fn run(&mut self) -> crate::Result {
         loop {
             if self.state.is_complete(self.event_queue.current_time()) {

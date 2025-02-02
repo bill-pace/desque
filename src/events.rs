@@ -28,7 +28,7 @@ use std::collections::BinaryHeap;
 /// Implementations are provided for integral builtin types,
 /// but not for floating-point builtin types as the latter do
 /// not implement `Ord`. If you wish to use either f32 or f64
-/// as your SimTime, you will need to wrap them in a type that
+/// as your `SimTime`, you will need to wrap them in a type that
 /// guarantees full ordering.
 pub trait SimTime: Ord + Clone + std::fmt::Debug {}
 
@@ -75,7 +75,7 @@ where
     /// Note that the simulation's clock time, accessible on the `event_queue` parameter, will update before
     /// invoking this method.
     ///
-    /// # Expected Errors
+    /// # Errors
     ///
     /// This method signature allows for the possibility of encountering error conditions at runtime. Of particular
     /// note here, the `crate::Error::BadExecution` variant wraps a `dyn std::error::Error` and so enables client
@@ -139,7 +139,7 @@ where
     State: SimState<Time>,
     Time: SimTime,
 {
-    /// Construct a new EventQueue with no scheduled events
+    /// Construct a new `EventQueue` with no scheduled events
     /// and a clock initialized to the provided time.
     pub(crate) fn new(start_time: Time) -> Self {
         Self {
