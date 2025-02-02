@@ -123,7 +123,6 @@ where
 /// loops, inconsistencies in the simulation state, or other
 /// problems that warrant an explicit "pay attention here"
 /// marker on call sites.
-
 #[derive(Debug, Default)]
 pub struct EventQueue<State, Time>
 where
