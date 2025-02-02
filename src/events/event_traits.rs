@@ -18,14 +18,15 @@ where
     Time: SimTime,
 {
     /// Update the simulation according to the specific type of event. The simulation will invoke this method
-    /// during [`crate::Simulation::run()`] for each scheduled event in sequence. Exclusive access will be provided
-    /// to both the simulation's current state and the event queue, allowing for both mutation of the simulation's
-    /// state and scheduling of new events.
+    /// during [`Simulation::run()`](crate::Simulation::run) for each scheduled event in sequence. Exclusive access will
+    /// be provided to both the simulation's current state and the event queue, allowing for both mutation of the
+    /// simulation's state and scheduling of new events.
     ///
-    /// This trait expects implementations of `execute()` to be fallible, and [`crate::Simulation::run()`] will
-    /// bubble any errors back up to the client as a [`crate::Error::BadExecution`]. Successful branches, as well as
-    /// infallible implementations, should simply return `Ok(())` to indicate to [`crate::Simulation::run()`] that
-    /// it may continue popping events from the queue.
+    /// This trait expects implementations of `execute()` to be fallible, and
+    /// [`Simulation::run()`](crate::Simulation::run) will bubble any errors back up to the client as a
+    /// [`Error::BadExecution`](crate::Error::BadExecution). Successful branches, as well as infallible implementations,
+    /// should simply return `Ok(())` to indicate to [`Simulation::run()`](crate::Simulation::run) that it may continue
+    /// popping events from the queue.
     ///
     /// Note that the simulation's clock time, accessible on the `event_queue` parameter, will update before
     /// invoking this method.
@@ -33,16 +34,16 @@ where
     /// # Errors
     ///
     /// This method signature allows for the possibility of encountering error conditions at runtime. Of particular
-    /// note here, the [`crate::Error::BadExecution`] variant wraps a `dyn std::error::Error` and so enables client
-    /// implementations of this method to effectively shut down a simulation when encountering any problems that
-    /// cannot be handled at runtime without causing a panic or otherwise losing information about the error
-    /// somewhere deep in the event queue.
+    /// note here, the [`Error::BadExecution`](crate::Error::BadExecution) variant wraps a `dyn std::error::Error` and
+    /// so enables client implementations of this method to effectively shut down a simulation when encountering any
+    /// problems that cannot be handled at runtime without causing a panic or otherwise losing information about the
+    /// error somewhere deep in the event queue.
     ///
-    /// See [`crate::Error`] for more details on the variants of this error enum.
+    /// See [`Error`](crate::Error) for more details on the variants of this error enum.
     fn execute(&mut self, simulation_state: &mut State, event_queue: &mut EventQueue<State, Time>) -> crate::Result;
 }
 
-/// An [`Event`] that is guaranteed not to return a [`crate::Error`] on execution. The `execute()` method on this
+/// An [`Event`] that is guaranteed not to return a [`Error`](crate::Error) on execution. The `execute()` method on this
 /// trait differs from [`Event::execute()`] only by omitting the return type. An implementation of [`Event`] is provided
 /// for all implementors of this trait which simply invokes [`OkEvent::execute()`] then returns `Ok(())`.
 pub trait OkEvent<State, Time>
@@ -51,9 +52,9 @@ where
     Time: SimTime,
 {
     /// Update the simulation according to the specific type of event. The simulation will invoke this method
-    /// during [`crate::Simulation::run()`] for each scheduled event in sequence. Exclusive access will be provided
-    /// to both the simulation's current state and the event queue, allowing for both mutation of the simulation's
-    /// state and scheduling of new events.
+    /// during [`Simulation::run()`](crate::Simulation::run) for each scheduled event in sequence. Exclusive access will
+    /// be provided to both the simulation's current state and the event queue, allowing for both mutation of the
+    /// simulation's state and scheduling of new events.
     ///
     /// Note that the simulation's clock time, accessible on the `event_queue` parameter, will update before
     /// invoking this method.

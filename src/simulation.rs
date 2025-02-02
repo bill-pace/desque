@@ -107,15 +107,15 @@ where
     /// here they will be passed back to the caller, unchanged. The two
     /// variants directly supported are:
     ///
-    /// 1. [`crate::Error::BackInTime`] means that client code attempted
-    ///    to schedule an event at some point in the simulation's past.
-    ///    This error is a likely indicator that client code contains a
-    ///    logical bug, as most discrete-event simulations would never
-    ///    rewind their clocks.
-    /// 2. [`crate::Error::BadExecution`] wraps a client-generated error
-    ///    in a way that is type-safe to feed back through this method.
-    ///    To handle the underlying error, either unpack the `BadExecution`
-    ///    or call its `source()` method.
+    /// 1. [`Error::BackInTime`](crate::Error::BackInTime) means that
+    ///    client code attempted to schedule an event at some point in
+    ///    the simulation's past. This error is a likely indicator that
+    ///    client code contains a logical bug, as most discrete-event
+    ///    simulations would never rewind their clocks.
+    /// 2. [`Error::BadExecution`](crate::Error::BadExecution) wraps a
+    ///    client-generated error in a way that is type-safe to feed back
+    ///    through this method. To handle the underlying error, either
+    ///    unpack the `BadExecution` or call its `source()` method.
     // the detected panic in here is a false alarm as the call to unwrap
     // is immediately preceded by a check that the Option is Some
     #[allow(clippy::missing_panics_doc)]
@@ -140,7 +140,8 @@ where
     /// # Errors
     ///
     /// If `time` is less than the current clock time on
-    /// `self`, returns a [`crate::Error::BackInTime`] to
+    /// `self`, returns a
+    /// [`Error::BackInTime`](crate::Error::BackInTime) to
     /// indicate the likely presence of a logical bug at
     /// the call site, with no modifications to the queue.
     pub fn schedule<EventType>(&mut self, event: EventType, time: Time) -> crate::Result
@@ -173,7 +174,8 @@ where
     /// # Errors
     ///
     /// If `time` is less than the current clock time on
-    /// `self`, returns a [`crate::Error::BackInTime`] to
+    /// `self`, returns a
+    /// [`Error::BackInTime`](crate::Error::BackInTime) to
     /// indicate the likely presence of a logical bug at
     /// the call site, with no modifications to the queue.
     pub fn schedule_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) -> crate::Result {

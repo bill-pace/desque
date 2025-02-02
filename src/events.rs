@@ -65,14 +65,15 @@ impl SimTime for isize {}
 /// An `EventQueue` provides several different methods for
 /// scheduling new events, but does not publicly support
 /// popping; popping events from the queue only occurs during
-/// [`crate::Simulation::run()`].
+/// [`Simulation::run()`](crate::Simulation::run).
 ///
 /// # Safety
 ///
 /// The safe methods provided for scheduling new events will
 /// compare the desired execution time against the current
 /// clock time. Scheduling an event for a time that is already
-/// past will result in a [`crate::Error::BackInTime`] without
+/// past will result in a
+/// [`Error::BackInTime`](crate::Error::BackInTime) without
 /// modifying the queue. This error indicates that client code
 /// probably has a logical error, as rewinding the clock in a
 /// discrete-event simulation should be very rare.
@@ -117,7 +118,8 @@ where
     /// # Errors
     ///
     /// If `time` is less than the current clock time on
-    /// `self`, returns a [`crate::Error::BackInTime`] to
+    /// `self`, returns a
+    /// [`Error::BackInTime`](crate::Error::BackInTime) to
     /// indicate the likely presence of a logical bug at
     /// the call site, with no modifications to the queue.
     pub fn schedule<EventType>(&mut self, event: EventType, time: Time) -> crate::Result
@@ -160,7 +162,8 @@ where
     /// # Errors
     ///
     /// If `time` is less than the current clock time on
-    /// `self`, returns a [`crate::Error::BackInTime`] to
+    /// `self`, returns a
+    /// [`Error::BackInTime`](crate::Error::BackInTime) to
     /// indicate the likely presence of a logical bug at
     /// the call site, with no modifications to the queue.
     pub fn schedule_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) -> crate::Result {

@@ -17,12 +17,12 @@
 //! If nonzero, then the queue size is decremented and
 //! a new Service event scheduled for the next customer.
 
-use std::cmp::Ordering;
-use std::ops::Add;
 use desque::*;
 use rand::SeedableRng;
 use rand_distr::{Distribution, Exp};
 use rand_pcg::Pcg64;
+use std::cmp::Ordering;
+use std::ops::Add;
 
 /// Wrap f64 with a new type so we can implement
 /// the Ord trait.
@@ -102,7 +102,10 @@ impl Event<Store, Time> for ArrivalEvent {
     ///
     /// Regardless, schedule a new ArrivalEvent.
     fn execute(&mut self, simulation_state: &mut Store, event_queue: &mut EventQueue<Store, Time>) -> Result {
-        println!("Handling customer arrival at time {:.3}...", event_queue.current_time().0);
+        println!(
+            "Handling customer arrival at time {:.3}...",
+            event_queue.current_time().0
+        );
 
         if simulation_state.server_busy {
             println!(
