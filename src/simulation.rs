@@ -9,7 +9,7 @@ use std::fmt::{Debug, Formatter};
 /// the real-world process or phenomenon in a program.
 ///
 /// This trait has only one method, which provides a way for the
-/// `crate::Simulation::run()` method to ask whether it should
+/// [`Simulation::run()`] method to ask whether it should
 /// continue executing events. The default implementation of this
 /// method will always answer "yes," and so a simulation running
 /// with that implementation will continue until the event queue
@@ -24,7 +24,7 @@ where
     Time: SimTime,
 {
     /// Reports whether the simulation has run to completion.
-    /// This method will be invoked in `crate::Simulation::run()`
+    /// This method will be invoked in [`Simulation::run()`]
     /// before popping each event off the queue: `true` indicates
     /// that the simulation is finished and that `run()` should
     /// break out of its loop, whereas `false` means that `run()`
@@ -50,7 +50,7 @@ where
 ///
 /// The expected workflow for a Simulation is:
 ///
-/// 1. Initialize a struct that implements `SimState`.
+/// 1. Initialize a struct that implements [`SimState`].
 /// 2. Pass this struct and the start time to `new()`.
 /// 3. Schedule at least one initial event.
 /// 4. Call `run()`. Handle any error it might return.
@@ -107,12 +107,12 @@ where
     /// here they will be passed back to the caller, unchanged. The two
     /// variants directly supported are:
     ///
-    /// 1. `crate::Error::BackInTime` means that client code attempted
+    /// 1. [`crate::Error::BackInTime`] means that client code attempted
     ///    to schedule an event at some point in the simulation's past.
     ///    This error is a likely indicator that client code contains a
     ///    logical bug, as most discrete-event simulations would never
     ///    rewind their clocks.
-    /// 2. `crate::Error::BadExecution` wraps a client-generated error
+    /// 2. [`crate::Error::BadExecution`] wraps a client-generated error
     ///    in a way that is type-safe to feed back through this method.
     ///    To handle the underlying error, either unpack the `BadExecution`
     ///    or call its `source()` method.
@@ -140,7 +140,7 @@ where
     /// # Errors
     ///
     /// If `time` is less than the current clock time on
-    /// `self`, returns a `crate::Error::BackInTime` to
+    /// `self`, returns a [`crate::Error::BackInTime`] to
     /// indicate the likely presence of a logical bug at
     /// the call site, with no modifications to the queue.
     pub fn schedule<EventType>(&mut self, event: EventType, time: Time) -> crate::Result
@@ -173,7 +173,7 @@ where
     /// # Errors
     ///
     /// If `time` is less than the current clock time on
-    /// `self`, returns a `crate::Error::BackInTime` to
+    /// `self`, returns a [`crate::Error::BackInTime`] to
     /// indicate the likely presence of a logical bug at
     /// the call site, with no modifications to the queue.
     pub fn schedule_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) -> crate::Result {

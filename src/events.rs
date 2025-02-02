@@ -8,27 +8,27 @@ use std::collections::BinaryHeap;
 /// trait is a superset of Ord, Clone, and Debug with no
 /// additional requirements or functionality.
 ///
-/// Your implementation of this trait should use the
-/// `std::comp::Ord` trait to account for not only the
-/// overall sequencing of events, but also any tie breaking
-/// that may be necessary in your use case. Note that events
-/// will be executed in ascending order of execution time,
-/// i.e. if `A.cmp(&B) == std::cmp::Ordering::Less` then event
-/// A will execute before event B.
+/// Your implementation of this trait should use the [`Ord`]
+/// trait to account for not only the overall sequencing of
+/// events, but also any tie breaking that may be necessary
+/// in your use case. Note that events will be executed in
+/// ascending order of execution time, i.e. if `A.cmp(&B) ==
+/// std::cmp::Ordering::Less` then event A will execute
+/// before event B.
 ///
-/// The `std::clone::Clone` trait is required to enable the
-/// `create::EventQueue::current_time()` method to hand back
+/// The [`Clone`] trait is required to enable the
+/// [`EventQueue::current_time()`] method to hand back
 /// a copy of the current time, protecting its own source of
 /// truth while allowing you to do whatever you need to do
 /// with your copy.
 ///
-/// `std::fmt::Debug` is necessary only for the implementation
-/// of Debug on `crate::EventQueue`.
+/// [`std::fmt::Debug`] is necessary only for the implementation
+/// of Debug on [`EventQueue`].
 ///
 /// Implementations are provided for integral builtin types,
 /// but not for floating-point builtin types as the latter do
-/// not implement `Ord`. If you wish to use either f32 or f64
-/// as your `SimTime`, you will need to wrap them in a type that
+/// not implement [`Ord`]. If you wish to use either f32 or f64
+/// as your [`SimTime`], you will need to wrap them in a type that
 /// guarantees full ordering.
 pub trait SimTime: Ord + Clone + std::fmt::Debug {}
 
@@ -63,12 +63,12 @@ where
     Time: SimTime,
 {
     /// Update the simulation according to the specific type of event. The simulation will invoke this method
-    /// during `crate::Simulation::run()` for each scheduled event in sequence. Exclusive access will be provided
+    /// during [`crate::Simulation::run()`] for each scheduled event in sequence. Exclusive access will be provided
     /// to both the simulation's current state and the event queue, allowing for both mutation of the simulation's
     /// state and scheduling of new events.
     ///
     /// This trait expects implementations of `execute()` to be fallible, and `crate::Simulation::run()` will
-    /// bubble any errors back up to the client as a `crate::Error::BadExecution`. Successful branches, as well as
+    /// bubble any errors back up to the client as a [`crate::Error::BadExecution`]. Successful branches, as well as
     /// infallible implementations, should simply return `Ok(())` to indicate to `crate::Simulation::run()` that
     /// it may continue popping events from the queue.
     ///
@@ -78,12 +78,12 @@ where
     /// # Errors
     ///
     /// This method signature allows for the possibility of encountering error conditions at runtime. Of particular
-    /// note here, the `crate::Error::BadExecution` variant wraps a `dyn std::error::Error` and so enables client
+    /// note here, the [`crate::Error::BadExecution`] variant wraps a `dyn std::error::Error` and so enables client
     /// implementations of this method to effectively shut down a simulation when encountering any problems that
     /// cannot be handled at runtime without causing a panic or otherwise losing information about the error
     /// somewhere deep in the event queue.
     ///
-    /// See `crate::Error` for more details on the variants of this error enum.
+    /// See [`crate::Error`] for more details on the variants of this error enum.
     fn execute(&mut self, simulation_state: &mut State, event_queue: &mut EventQueue<State, Time>) -> crate::Result;
 }
 
@@ -91,7 +91,7 @@ where
 /// in ascending order of execution time, with ties broken by
 /// the order in which they were pushed onto the queue. This
 /// tiebreaker is in addition to any built-in to the
-/// implementation of `crate::SimTime` used for the clock as
+/// implementation of [`SimTime`] used for the clock as
 /// a way to stabilize the observed order of execution.
 ///
 /// This struct is generic over the type used to represent
@@ -102,14 +102,14 @@ where
 /// An `EventQueue` provides several different methods for
 /// scheduling new events, but does not publicly support
 /// popping; popping events from the queue only occurs during
-/// `crate::Simulation::run()`.
+/// [`crate::Simulation::run()`].
 ///
 /// # Safety
 ///
 /// The safe methods provided for scheduling new events will
 /// compare the desired execution time against the current
 /// clock time. Scheduling an event for a time that is already
-/// past will result in a `crate::Error::BackInTime` without
+/// past will result in a [`crate::Error::BackInTime`] without
 /// modifying the queue. This error indicates that client code
 /// probably has a logical error, as rewinding the clock in a
 /// discrete-event simulation should be very rare.
@@ -139,7 +139,7 @@ where
     State: SimState<Time>,
     Time: SimTime,
 {
-    /// Construct a new `EventQueue` with no scheduled events
+    /// Construct a new [`EventQueue`] with no scheduled events
     /// and a clock initialized to the provided time.
     pub(crate) fn new(start_time: Time) -> Self {
         Self {
@@ -154,7 +154,7 @@ where
     /// # Errors
     ///
     /// If `time` is less than the current clock time on
-    /// `self`, returns a `crate::Error::BackInTime` to
+    /// `self`, returns a [`crate::Error::BackInTime`] to
     /// indicate the likely presence of a logical bug at
     /// the call site, with no modifications to the queue.
     pub fn schedule<EventType>(&mut self, event: EventType, time: Time) -> crate::Result
@@ -197,7 +197,7 @@ where
     /// # Errors
     ///
     /// If `time` is less than the current clock time on
-    /// `self`, returns a `crate::Error::BackInTime` to
+    /// `self`, returns a [`crate::Error::BackInTime`] to
     /// indicate the likely presence of a logical bug at
     /// the call site, with no modifications to the queue.
     pub fn schedule_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) -> crate::Result {
@@ -281,11 +281,11 @@ where
 /// queue, namely the execution time and a record of
 /// the event's insertion sequence.
 ///
-/// The implementation of `std::cmp::Ord` on this
-/// struct cares first about the execution time,
-/// giving full control of event ordering to client
-/// code, comparing the insertion sequences only
-/// to break ties.
+/// The implementation of [`Ord`] on this struct
+/// cares first about the execution time, giving full
+/// control of event ordering to client code,
+/// comparing the insertion sequences only to break
+/// ties.
 struct EventHolder<State, Time>
 where
     State: SimState<Time>,
