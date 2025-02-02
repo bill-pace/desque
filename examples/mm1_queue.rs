@@ -19,7 +19,7 @@
 
 use std::cmp::Ordering;
 use std::ops::Add;
-use des_framework::*;
+use desque::*;
 use rand::SeedableRng;
 use rand_distr::{Distribution, Exp};
 use rand_pcg::Pcg64;
