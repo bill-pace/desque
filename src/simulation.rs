@@ -33,7 +33,10 @@ where
     /// The default implementation always returns false, which
     /// results in the simulation continuing until the event
     /// queue empties out.
-    fn is_complete(&self, _current_time: Time) -> bool {
+    // expect that other implementations will make use of the
+    // argument even though this one doesn't
+    #[allow(unused_variables)]
+    fn is_complete(&self, current_time: Time) -> bool {
         false
     }
 }
