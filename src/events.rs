@@ -333,11 +333,7 @@ where
     Time: SimTime,
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        let comparison = self.execution_time.partial_cmp(&other.execution_time);
-        match comparison {
-            Some(Ordering::Equal) => self.insertion_sequence.partial_cmp(&other.insertion_sequence),
-            _ => comparison,
-        }
+        Some(self.cmp(other))
     }
 }
 

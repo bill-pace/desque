@@ -92,9 +92,9 @@ where
     ///
     /// 1. Does `state.is_complete()` return true? If so, return `Ok(())`.
     /// 2. Attempt to pop the next event from the queue. If there isn't
-    /// one, return `Ok(())`.
+    ///    one, return `Ok(())`.
     /// 3. Pass exclusive references to the `state` and `event_queue`
-    /// fields to `event.execute()`.
+    ///    fields to `event.execute()`.
     ///     1. If an error is returned, forward it as-is to the caller.
     ///     2. Otherwise, go back to step 1.
     ///
@@ -105,14 +105,14 @@ where
     /// variants directly supported are:
     ///
     /// 1. `crate::Error::BackInTime` means that client code attempted
-    /// to schedule an event at some point in the simulation's past.
-    /// This error is a likely indicator that client code contains a
-    /// logical bug, as most discrete-event simulations would never
-    /// rewind their clocks.
+    ///    to schedule an event at some point in the simulation's past.
+    ///    This error is a likely indicator that client code contains a
+    ///    logical bug, as most discrete-event simulations would never
+    ///    rewind their clocks.
     /// 2. `crate::Error::BadExecution` wraps a client-generated error
-    /// in a way that is type-safe to feed back through this method.
-    /// To handle the underlying error, either unpack the `BadExecution`
-    /// or call its `source()` method.
+    ///    in a way that is type-safe to feed back through this method.
+    ///    To handle the underlying error, either unpack the `BadExecution`
+    ///    or call its `source()` method.
     pub fn run(&mut self) -> crate::Result {
         loop {
             if self.state.is_complete(self.event_queue.current_time()) {
