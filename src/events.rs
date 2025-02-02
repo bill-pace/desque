@@ -158,7 +158,8 @@ where
     /// indicate the likely presence of a logical bug at
     /// the call site, with no modifications to the queue.
     pub fn schedule<EventType>(&mut self, event: EventType, time: Time) -> crate::Result
-    where EventType: Event<State, Time> + 'static
+    where
+        EventType: Event<State, Time> + 'static,
     {
         if time < self.last_execution_time {
             return Err(crate::Error::BackInTime);
@@ -185,7 +186,8 @@ where
     /// strictly positive offset to the current clock time to get the `time` argument
     /// for the call.
     pub unsafe fn schedule_unchecked<EventType>(&mut self, event: EventType, time: Time)
-    where EventType: Event<State, Time> + 'static
+    where
+        EventType: Event<State, Time> + 'static,
     {
         self.schedule_unchecked_from_boxed(Box::new(event), time);
     }
@@ -264,7 +266,12 @@ where
     Time: SimTime,
 {
     fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(formatter, "EventQueue with {} scheduled events at current time {:?}", self.events.len(), self.last_execution_time)
+        write!(
+            formatter,
+            "EventQueue with {} scheduled events at current time {:?}",
+            self.events.len(),
+            self.last_execution_time
+        )
     }
 }
 
@@ -295,9 +302,11 @@ where
     Time: SimTime,
 {
     fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(formatter,
-               "dynamic event scheduled at time {:?}, insertion sequence {:?}",
-               self.execution_time, self.insertion_sequence)
+        write!(
+            formatter,
+            "dynamic event scheduled at time {:?}, insertion sequence {:?}",
+            self.execution_time, self.insertion_sequence
+        )
     }
 }
 
@@ -307,8 +316,7 @@ where
     Time: SimTime,
 {
     fn eq(&self, other: &Self) -> bool {
-        self.insertion_sequence == other.insertion_sequence &&
-            self.execution_time == other.execution_time
+        self.insertion_sequence == other.insertion_sequence && self.execution_time == other.execution_time
     }
 }
 
@@ -316,7 +324,8 @@ impl<State, Time> Eq for EventHolder<State, Time>
 where
     State: SimState<Time>,
     Time: SimTime,
-{}
+{
+}
 
 impl<State, Time> PartialOrd<Self> for EventHolder<State, Time>
 where
@@ -369,7 +378,9 @@ mod tests {
 
     #[test]
     fn execution_time_ascends() {
-        let mut state = State { executed_event_values: Vec::with_capacity(3) };
+        let mut state = State {
+            executed_event_values: Vec::with_capacity(3),
+        };
         let mut queue = EventQueue::new(0);
         queue.schedule(TestEvent { value: 1 }, 1).unwrap();
         queue.schedule(TestEvent { value: 2 }, 3).unwrap();
@@ -380,7 +391,10 @@ mod tests {
             event.execute(&mut state, &mut queue).unwrap();
         }
 
-        assert_eq!(expected, state.executed_event_values, "events did not execute in expected order");
+        assert_eq!(
+            expected, state.executed_event_values,
+            "events did not execute in expected order"
+        );
     }
 
     #[test]
@@ -388,7 +402,11 @@ mod tests {
         let mut queue = EventQueue::new(0);
         let result = queue.schedule(TestEvent { value: 0 }, -1);
         assert!(result.is_err(), "queue failed to reject event scheduled for the past");
-        assert_eq!(crate::Error::BackInTime, result.err().unwrap(), "queue returned unexpected error type");
+        assert_eq!(
+            crate::Error::BackInTime,
+            result.err().unwrap(),
+            "queue returned unexpected error type"
+        );
     }
 
     #[test]
@@ -398,13 +416,19 @@ mod tests {
             queue.schedule_unchecked(TestEvent { value: 1 }, -1);
         }
         queue.get_next().unwrap();
-        assert_eq!(-1, queue.current_time(), "current time did not update when popping event scheduled in the past");
+        assert_eq!(
+            -1,
+            queue.current_time(),
+            "current time did not update when popping event scheduled in the past"
+        );
     }
 
     #[test]
     fn insertion_sequence_breaks_ties_in_execution_time() {
         const NUM_EVENTS: i32 = 10;
-        let mut state = State { executed_event_values: Vec::with_capacity(NUM_EVENTS as usize) };
+        let mut state = State {
+            executed_event_values: Vec::with_capacity(NUM_EVENTS as usize),
+        };
         let mut queue = EventQueue::new(0);
 
         for copy_id in 0..NUM_EVENTS {
@@ -415,6 +439,9 @@ mod tests {
         }
 
         let expected: Vec<_> = (0..NUM_EVENTS).collect();
-        assert_eq!(expected, state.executed_event_values, "events executed out of insertion sequence")
+        assert_eq!(
+            expected, state.executed_event_values,
+            "events executed out of insertion sequence"
+        )
     }
 }

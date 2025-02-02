@@ -25,7 +25,7 @@ pub enum Error {
     /// A client-generated error was encountered
     /// while executing an event. Call `source()`
     /// or unpack this value to handle it directly.
-    BadExecution(Box<dyn std::error::Error>)
+    BadExecution(Box<dyn std::error::Error>),
 }
 
 impl PartialEq for Error {

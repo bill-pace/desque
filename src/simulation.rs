@@ -20,7 +20,8 @@ use std::fmt::{Debug, Formatter};
 /// that type as a parameter and have full access to the specific
 /// type in client implementations.
 pub trait SimState<Time>
-where Time: SimTime
+where
+    Time: SimTime,
 {
     /// Reports whether the simulation has run to completion.
     /// This method will be invoked in `crate::Simulation::run()`
@@ -115,12 +116,12 @@ where
     pub fn run(&mut self) -> crate::Result {
         loop {
             if self.state.is_complete(self.event_queue.current_time()) {
-                return Ok(())
+                return Ok(());
             }
 
             let next_event = self.event_queue.get_next();
             if next_event.is_none() {
-                return Ok(())
+                return Ok(());
             }
 
             let mut next_event = next_event.unwrap();
@@ -137,7 +138,8 @@ where
     /// indicate the likely presence of a logical bug at
     /// the call site, with no modifications to the queue.
     pub fn schedule<EventType>(&mut self, event: EventType, time: Time) -> crate::Result
-    where EventType: Event<State, Time> + 'static
+    where
+        EventType: Event<State, Time> + 'static,
     {
         self.event_queue.schedule(event, time)
     }
@@ -154,7 +156,8 @@ where
     /// strictly positive offset to the current clock time to get the `time` argument
     /// for the call.
     pub unsafe fn schedule_unchecked<EventType>(&mut self, event: EventType, time: Time)
-    where EventType: Event<State, Time> + 'static
+    where
+        EventType: Event<State, Time> + 'static,
     {
         self.event_queue.schedule_unchecked(event, time);
     }
@@ -199,13 +202,13 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::Event;
     use super::*;
+    use crate::Event;
 
     #[derive(Debug)]
     struct State {
         executed_event_values: Vec<u32>,
-        complete: bool
+        complete: bool,
     }
     impl SimState<u32> for State {
         fn is_complete(&self, _: u32) -> bool {
@@ -242,11 +245,7 @@ mod tests {
             0,
         );
 
-        let events: [TestEvent; 3] = [
-            TestEvent { value: 1 },
-            TestEvent { value: 3 },
-            TestEvent { value: 2 },
-        ];
+        let events: [TestEvent; 3] = [TestEvent { value: 1 }, TestEvent { value: 3 }, TestEvent { value: 2 }];
 
         for (i, event) in events.into_iter().enumerate() {
             sim.event_queue.schedule(event, 2 * i as u32).unwrap();
@@ -260,16 +259,24 @@ mod tests {
         sim.run().unwrap();
 
         let expected = vec![1, 3, 2];
-        assert_eq!(expected, sim.state.executed_event_values, "events did not execute in correct order");
+        assert_eq!(
+            expected, sim.state.executed_event_values,
+            "events did not execute in correct order"
+        );
     }
 
     #[test]
     fn simulation_stops_with_events_still_in_queue() {
         let mut sim = setup();
-        sim.event_queue.schedule_from_boxed(Box::new(CompletionEvent {}), 3).unwrap();
+        sim.event_queue
+            .schedule_from_boxed(Box::new(CompletionEvent {}), 3)
+            .unwrap();
         sim.run().unwrap();
 
         let expected = vec![1, 3];
-        assert_eq!(expected, sim.state.executed_event_values, "simulation did not terminate with completion event");
+        assert_eq!(
+            expected, sim.state.executed_event_values,
+            "simulation did not terminate with completion event"
+        );
     }
 }
