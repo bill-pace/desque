@@ -1,7 +1,7 @@
-//! A G/G/1 queue that prints arrival and service event logs
-//! to stdout. Arrival times are uniformly distributed from
-//! zero to sixty minutes, and services times are uniformly
-//! distributed from zero to forty minutes.
+//! An M/M/1 queue that prints arrival and service event logs
+//! to stdout. Arrival times are distributed with a mean
+//! spacing of thirty minutes, and services times with a mean
+//! spacing of twenty minutes.
 //!
 //! The simulation runs for nine hours before terminating,
 //! and so could represent a small, service-oriented
@@ -16,12 +16,36 @@
 //! Service events check the current size of the queue.
 //! If nonzero, then the queue size is decremented and
 //! a new Service event scheduled for the next customer.
-//!
-//! Time is represented as `usize` for simplicity.
 
+use std::cmp::Ordering;
+use std::ops::Add;
 use des_framework::*;
-use rand::{Rng, SeedableRng};
+use rand::SeedableRng;
+use rand_distr::{Distribution, Exp};
 use rand_pcg::Pcg64;
+
+/// Wrap f64 with a new type so we can implement
+/// the Ord trait.
+#[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
+struct Time(f64);
+
+impl Eq for Time {}
+
+impl Ord for Time {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.0.partial_cmp(&other.0).unwrap()
+    }
+}
+
+impl SimTime for Time {}
+
+impl Add<f64> for Time {
+    type Output = Self;
+
+    fn add(self, rhs: f64) -> Self::Output {
+        Self(self.0 + rhs)
+    }
+}
 
 /// Tracks the current length of the queue, whether
 /// the server is busy or idle, the desired end time
@@ -31,7 +55,7 @@ use rand_pcg::Pcg64;
 struct Store {
     queue_length: usize,
     server_busy: bool,
-    end_time: usize,
+    end_time: f64,
     rng: Pcg64,
 }
 
@@ -39,7 +63,7 @@ impl Store {
     /// Creates an empty store with idle server,
     /// logs the desired end time, and seeds
     /// a random-number generator.
-    fn new(end_time: usize) -> Self {
+    fn new(end_time: f64) -> Self {
         Self {
             queue_length: 0,
             server_busy: false,
@@ -49,11 +73,11 @@ impl Store {
     }
 }
 
-impl SimState<usize> for Store {
+impl SimState<Time> for Store {
     /// Checks whether the current simulation time is
     /// at least the intended end time.
-    fn is_complete(&self, current_time: usize) -> bool {
-        current_time >= self.end_time
+    fn is_complete(&self, current_time: Time) -> bool {
+        current_time.0 >= self.end_time
     }
 }
 
@@ -62,22 +86,23 @@ impl SimState<usize> for Store {
 struct ArrivalEvent {}
 
 impl ArrivalEvent {
-    /// Draw a uniform random number from the range [0, 60] to produce the next
+    /// Draw an exponential random number with mean 30.0 to produce the next
     /// arrival time and place a new ArrivalEvent on the queue for that time.
-    fn schedule(simulation_state: &mut Store, event_queue: &mut EventQueue<Store, usize>) -> Result {
-        let next_arrival_delay = simulation_state.rng.random_range(0..=60);
+    fn schedule(simulation_state: &mut Store, event_queue: &mut EventQueue<Store, Time>) -> Result {
+        let distribution = Exp::new(1.0 / 30.0).unwrap();
+        let next_arrival_delay = distribution.sample(&mut simulation_state.rng);
         let next_arrival_time = event_queue.current_time() + next_arrival_delay;
         event_queue.schedule(ArrivalEvent {}, next_arrival_time)
     }
 }
 
-impl Event<Store, usize> for ArrivalEvent {
+impl Event<Store, Time> for ArrivalEvent {
     /// If server is idle, mark it busy and schedule a service event.
     /// Otherwise, increment the queue length.
     ///
     /// Regardless, schedule a new ArrivalEvent.
-    fn execute(&mut self, simulation_state: &mut Store, event_queue: &mut EventQueue<Store, usize>) -> Result {
-        println!("Handling customer arrival at time {}...", event_queue.current_time());
+    fn execute(&mut self, simulation_state: &mut Store, event_queue: &mut EventQueue<Store, Time>) -> Result {
+        println!("Handling customer arrival at time {:.3}...", event_queue.current_time().0);
 
         if simulation_state.server_busy {
             println!(
@@ -101,23 +126,24 @@ impl Event<Store, usize> for ArrivalEvent {
 struct ServiceEvent {}
 
 impl ServiceEvent {
-    /// Draw a uniform random number from the range [0, 40] to produce the next
+    /// Draw an exponential random number with mean 20.0 to produce the next
     /// service time and place a new ServiceEvent on the queue for that time.
-    fn schedule(simulation_state: &mut Store, event_queue: &mut EventQueue<Store, usize>) -> Result {
-        let service_length = simulation_state.rng.random_range(0..=40);
+    fn schedule(simulation_state: &mut Store, event_queue: &mut EventQueue<Store, Time>) -> Result {
+        let distribution = Exp::new(1.0 / 20.0).unwrap();
+        let service_length = distribution.sample(&mut simulation_state.rng);
         let service_completion_time = event_queue.current_time() + service_length;
         event_queue.schedule(ServiceEvent {}, service_completion_time)
     }
 }
 
-impl Event<Store, usize> for ServiceEvent {
+impl Event<Store, Time> for ServiceEvent {
     /// If at least one other customer is in line, decrement the length of the line
     /// and schedule a new ServiceEvent.
     /// Otherwise, mark the server as idle.
-    fn execute(&mut self, simulation_state: &mut Store, event_queue: &mut EventQueue<Store, usize>) -> Result {
+    fn execute(&mut self, simulation_state: &mut Store, event_queue: &mut EventQueue<Store, Time>) -> Result {
         println!(
-            "Completed service for customer. Checking queue at time {}...",
-            event_queue.current_time(),
+            "Completed service for customer. Checking queue at time {:.3}...",
+            event_queue.current_time().0,
         );
 
         if simulation_state.queue_length == 0 {
@@ -141,8 +167,8 @@ impl Event<Store, usize> for ServiceEvent {
 /// from which all other events will be derived. Then, run the
 /// simulation - events will print to stdout as they execute.
 fn main() {
-    let store = Store::new(540);
-    let mut sim = Simulation::new(store, 0);
+    let store = Store::new(540.0);
+    let mut sim = Simulation::new(store, Time(0.0));
     ArrivalEvent::schedule(&mut sim.state, &mut sim.event_queue).unwrap();
     sim.run().unwrap();
 }
