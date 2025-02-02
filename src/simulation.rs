@@ -42,7 +42,7 @@ where
 }
 
 /// The defining struct for a discrete-event simulation in
-/// this crate. A Simulation owns both its state and its
+/// desque. A Simulation owns both its state and its
 /// event queue, providing public access to each so clients
 /// can set up and tear down instances as needed - for
 /// example, scheduling initial events or writing the final

@@ -68,5 +68,5 @@ impl std::error::Error for Error {
 
 /// A type alias for `std::result::Result<(), desque::Error>`
 /// that simplifies the signatures of various functions in
-/// this crate.
+/// desque.
 pub type Result = std::result::Result<(), Error>;

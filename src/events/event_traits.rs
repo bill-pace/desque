@@ -7,7 +7,7 @@ use super::{EventQueue, SimState, SimTime};
 /// and clock time to enable your implementations of each trait
 /// to work together within this framework.
 ///
-/// Note that this crate does not directly support the notion of
+/// Note that desque does not directly support the notion of
 /// interrupting events, so if you need that functionality then
 /// you may wish to extend this trait or to otherwise provide a
 /// means for your interruptible events to determine whether they
