@@ -37,7 +37,7 @@ impl PartialEq for Error {
             (Error::BadExecution(e1), Error::BadExecution(e2)) => {
                 let e1: *const dyn std::error::Error = e1.as_ref();
                 let e2: *const dyn std::error::Error = e2.as_ref();
-                std::ptr::addr_eq(e1, e2)
+                std::ptr::eq(e1, e2)
             },
             _ => false,
         }
