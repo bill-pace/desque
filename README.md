@@ -24,7 +24,8 @@ TODO link to docs page
 # Compatibility
 
 desque requires access to the Rust standard library but has no other runtime
-dependencies. TODO min language version supported?
+dependencies. Rust language versions of at least 1.63.0 provide all necessary
+features for this library and its dev dependencies.
 
 # License
 
