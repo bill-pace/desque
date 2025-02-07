@@ -1,6 +1,6 @@
 # desque
 
-[![Test Status](https://github.com/bill-pace/desque/actions/workflows/rust.yml/badge.svg?event=push)](https://github.com/bill-pace/desque/actions)
+[![Test Status](https://github.com/bill-pace/desque/actions/workflows/tests.yml/badge.svg?event=push)](https://github.com/bill-pace/desque/actions)
 
 desque provides a lightweight framework for developing discrete-event simulations.
 Designed with a use case of "headless CLI" in mind, it comes with no unwanted
