@@ -7,6 +7,9 @@ license = "MIT"
 description = "Lightweight discrete-event simulation framework."
 repository = "https://github.com/bill-pace/desque"
 readme = "README.md"
+authors = ["Bill Pace"]
+keywords = ["discrete-event", "simulation", "des"]
+categories = ["simulation"]
 
 [dev-dependencies]
 rand = "0.9"
