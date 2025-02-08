@@ -130,7 +130,8 @@ where
                 return Ok(());
             }
 
-            let mut next_event = next_event.unwrap();
+            let mut next_event = next_event
+                .expect("next_event should not be None");
             next_event.execute(&mut self.state, &mut self.event_queue)?;
         }
     }
