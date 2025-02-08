@@ -59,7 +59,7 @@ where
 /// A Simulation also provides the same event-scheduling
 /// interface as its underlying queue for the purpose of
 /// making step 3 slightly simpler.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Simulation<State, Time>
 where
     State: SimState<Time>,
