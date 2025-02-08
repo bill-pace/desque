@@ -1,5 +1,5 @@
-use std::fmt::Debug;
 use super::{EventQueue, SimState, SimTime};
+use std::fmt::Debug;
 
 /// A behavior or state change that occurs within a simulation.
 /// This trait has one required method that describes what
@@ -13,7 +13,7 @@ use super::{EventQueue, SimState, SimTime};
 /// you may wish to extend this trait or to otherwise provide a
 /// means for your interruptible events to determine whether they
 /// should execute when popped from the queue.
-pub trait Event<State, Time> : Debug
+pub trait Event<State, Time>: Debug
 where
     State: SimState<Time>,
     Time: SimTime,
@@ -47,7 +47,7 @@ where
 /// An [`Event`] that is guaranteed not to return a [`Error`](crate::Error) on execution. The `execute()` method on this
 /// trait differs from [`Event::execute()`] only by omitting the return type. An implementation of [`Event`] is provided
 /// for all implementors of this trait which simply invokes [`OkEvent::execute()`] then returns `Ok(())`.
-pub trait OkEvent<State, Time> : Debug
+pub trait OkEvent<State, Time>: Debug
 where
     State: SimState<Time>,
     Time: SimTime,
