@@ -3,6 +3,10 @@ name = "desque"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.63"
+license = "MIT"
+description = "Lightweight discrete-event simulation framework."
+repository = "https://github.com/bill-pace/desque"
+readme = "README.md"
 
 [dev-dependencies]
 rand = "0.9"
