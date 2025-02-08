@@ -1,6 +1,8 @@
 # desque
 
 [![Test Status](https://github.com/bill-pace/desque/actions/workflows/tests.yml/badge.svg?event=push)](https://github.com/bill-pace/desque/actions)
+[![Crate](https://img.shields.io/crates/v/desque.svg)](https://crates.io/crates/desque)
+[![Docs](https://docs.rs/desque/badge.svg)](https://docs.rs/desque)
 
 desque provides a lightweight framework for developing discrete-event simulations.
 Designed with a use case of "headless CLI" in mind, it comes with no unwanted
@@ -19,7 +21,8 @@ analysis using the variance reduction technique known as common random numbers. 
 example also takes advantage of multithreading to run each server configuration up for
 comparison simultaneously.
 
-TODO link to docs page
+[Detailed documentation](https://docs.rs/desque) explains the interface for all exported
+types and the requirements for template parameters in client code.
 
 # Compatibility
 
