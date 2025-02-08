@@ -211,7 +211,7 @@ where
 
     /// Crate-internal function to pop an event from the queue. Updates the
     /// current clock time to match the execution time of the popped event.
-    pub(crate) fn get_next(&mut self) -> Option<Box<dyn Event<State, Time>>> {
+    pub(crate) fn next(&mut self) -> Option<Box<dyn Event<State, Time>>> {
         if let Some(event_holder) = self.events.pop() {
             self.last_execution_time = event_holder.0.execution_time;
             Some(event_holder.0.event)
@@ -274,7 +274,7 @@ mod tests {
         queue.schedule(TestEvent { value: 3 }, 2).unwrap();
         let expected = vec![1, 3, 2];
 
-        while let Some(mut event) = queue.get_next() {
+        while let Some(mut event) = queue.next() {
             event.execute(&mut state, &mut queue).unwrap();
         }
 
@@ -302,7 +302,7 @@ mod tests {
         unsafe {
             queue.schedule_unchecked(TestEvent { value: 1 }, -1);
         }
-        queue.get_next().unwrap();
+        queue.next().unwrap();
         assert_eq!(
             -1,
             queue.current_time(),
@@ -321,7 +321,7 @@ mod tests {
         for copy_id in 0..NUM_EVENTS {
             queue.schedule(TestEvent { value: copy_id }, 1).unwrap();
         }
-        while let Some(mut event) = queue.get_next() {
+        while let Some(mut event) = queue.next() {
             event.execute(&mut state, &mut queue).unwrap();
         }
 

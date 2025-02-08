@@ -125,7 +125,7 @@ where
                 return Ok(());
             }
 
-            let next_event = self.event_queue.get_next();
+            let next_event = self.event_queue.next();
             if next_event.is_none() {
                 return Ok(());
             }
