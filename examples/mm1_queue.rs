@@ -95,6 +95,13 @@ impl ArrivalEvent {
         let next_arrival_time = event_queue.current_time() + next_arrival_delay;
         event_queue.schedule(ArrivalEvent {}, next_arrival_time)
     }
+    
+    fn schedule_first(sim: &mut Simulation<Store, Time>) -> Result {
+        let distribution = Exp::new(1.0 / 30.0).unwrap();
+        let next_arrival_delay = distribution.sample(&mut sim.state_mut().rng);
+        let next_arrival_time = sim.event_queue().current_time() + next_arrival_delay;
+        sim.event_queue_mut().schedule(Self {}, next_arrival_time)
+    }
 }
 
 impl Event<Store, Time> for ArrivalEvent {
@@ -174,6 +181,6 @@ impl Event<Store, Time> for ServiceEvent {
 fn main() {
     let store = Store::new(540.0);
     let mut sim = Simulation::new(store, Time(0.0));
-    ArrivalEvent::schedule(&mut sim.state, &mut sim.event_queue).unwrap();
+    ArrivalEvent::schedule_first(&mut sim).unwrap();
     sim.run().unwrap();
 }

@@ -107,6 +107,14 @@ impl ArrivalEvent {
             .schedule(Self {}, F64Time(arrival_time))
             .expect("arrival delay should always be a positive number");
     }
+    
+    fn schedule_first(sim: &mut Simulation<Store, F64Time>) {
+        let arrival_delay = sim.state_mut().gen_arrival_delay();
+        let arrival_time = arrival_delay + sim.event_queue().current_time().0;
+        sim.event_queue_mut()
+            .schedule(Self {}, F64Time(arrival_time))
+            .expect("arrival delay should always be a positive number");
+    }
 }
 
 impl OkEvent<Store, F64Time> for ArrivalEvent {
@@ -191,11 +199,11 @@ fn run_sim(seed: u64, num_servers: u32, service_rate: f64) -> (usize, f64) {
     let rng = Pcg64::seed_from_u64(seed);
     let store = Store::new(num_servers, service_rate, rng);
     let mut sim = Simulation::new(store, F64Time(0.0));
-    EndEvent::schedule(F64Time(540.0), &mut sim.event_queue);
-    ArrivalEvent::schedule(&mut sim.state, &mut sim.event_queue);
+    EndEvent::schedule(F64Time(540.0), sim.event_queue_mut());
+    ArrivalEvent::schedule_first(&mut sim);
 
     sim.run().expect("simulation should complete normally");
-    (sim.state.customers_served, sim.state.total_time_in_queue)
+    (sim.state().customers_served, sim.state().total_time_in_queue)
 }
 
 fn main() {

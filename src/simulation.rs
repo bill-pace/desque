@@ -67,10 +67,10 @@ where
 {
     /// A priority queue of events that have been scheduled
     /// to execute, ordered ascending by execution time.
-    pub event_queue: EventQueue<State, Time>,
+    event_queue: EventQueue<State, Time>,
     /// The current shared state of the Simulation. Exclusive
     /// access will be granted to each event that executes.
-    pub state: State,
+    state: State,
 }
 
 impl<State, Time> Simulation<State, Time>
@@ -196,6 +196,26 @@ where
     /// for the call.
     pub unsafe fn schedule_unchecked_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) {
         self.event_queue.schedule_unchecked_from_boxed(event, time);
+    }
+    
+    /// Get a shared reference to the simulation state.
+    pub fn state(&self) -> &State {
+        &self.state
+    }
+    
+    /// Get an exclusive reference to the simulation state.
+    pub fn state_mut(&mut self) -> &mut State {
+        &mut self.state
+    }
+    
+    /// Get a shared reference to the event queue.
+    pub fn event_queue(&self) -> &EventQueue<State, Time> {
+        &self.event_queue
+    }
+    
+    /// Get an exclusive reference to the event queue.
+    pub fn event_queue_mut(&mut self) -> &mut EventQueue<State, Time> {
+        &mut self.event_queue
     }
 }
 
