@@ -12,6 +12,7 @@ use std::cmp::Ordering;
 /// control of event ordering to client code,
 /// comparing the insertion sequences only to break
 /// ties.
+#[derive(Debug)]
 pub(super) struct EventHolder<State, Time>
 where
     State: SimState<Time>,
@@ -20,20 +21,6 @@ where
     pub execution_time: Time,
     pub event: Box<dyn Event<State, Time>>,
     pub insertion_sequence: usize,
-}
-
-impl<State, Time> std::fmt::Debug for EventHolder<State, Time>
-where
-    State: SimState<Time>,
-    Time: SimTime,
-{
-    fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(
-            formatter,
-            "dynamic event scheduled at time {:?}, insertion sequence {:?}",
-            self.execution_time, self.insertion_sequence
-        )
-    }
 }
 
 impl<State, Time> PartialEq<Self> for EventHolder<State, Time>
