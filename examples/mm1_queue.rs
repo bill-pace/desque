@@ -95,7 +95,7 @@ impl ArrivalEvent {
         let next_arrival_time = event_queue.current_time() + next_arrival_delay;
         event_queue.schedule(ArrivalEvent {}, next_arrival_time)
     }
-    
+
     fn schedule_first(sim: &mut Simulation<Store, Time>) -> Result {
         let distribution = Exp::new(1.0 / 30.0).unwrap();
         let next_arrival_delay = distribution.sample(&mut sim.state_mut().rng);

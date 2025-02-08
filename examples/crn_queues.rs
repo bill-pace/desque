@@ -107,7 +107,7 @@ impl ArrivalEvent {
             .schedule(Self {}, F64Time(arrival_time))
             .expect("arrival delay should always be a positive number");
     }
-    
+
     fn schedule_first(sim: &mut Simulation<Store, F64Time>) {
         let arrival_delay = sim.state_mut().gen_arrival_delay();
         let arrival_time = arrival_delay + sim.event_queue().current_time().0;

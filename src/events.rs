@@ -7,10 +7,11 @@ use event_traits::Event;
 
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
+use std::fmt::Debug;
 
 /// The type used for a simulation's clock, kept generic to
 /// support as many variations of clock as possible. This
-/// trait is a superset of Ord, Clone, and Debug with no
+/// trait is a superset of [`Ord`], [`Clone`], and [`Debug`] with no
 /// additional requirements or functionality.
 ///
 /// Your implementation of this trait should use the [`Ord`]
@@ -27,15 +28,15 @@ use std::collections::BinaryHeap;
 /// truth while allowing you to do whatever you need to do
 /// with your copy.
 ///
-/// [`std::fmt::Debug`] is necessary only for the implementation
+/// [`Debug`] is necessary only for the implementation
 /// of Debug on [`EventQueue`].
 ///
 /// Implementations are provided for integral builtin types,
 /// but not for floating-point builtin types as the latter do
-/// not implement [`Ord`]. If you wish to use either f32 or f64
-/// as your [`SimTime`], you will need to wrap them in a type that
-/// guarantees full ordering.
-pub trait SimTime: Ord + Clone + std::fmt::Debug {}
+/// not implement [`Ord`]. If you wish to use either [`f32`] or
+/// [`f64`] as your [`SimTime`], you will need to wrap them in
+/// a type that guarantees full ordering.
+pub trait SimTime: Ord + Clone + Debug {}
 
 impl SimTime for u8 {}
 impl SimTime for u16 {}
@@ -62,18 +63,17 @@ impl SimTime for isize {}
 /// as well over the type used to represent simulation state
 /// so that it can work with appropriate event types.
 ///
-/// An `EventQueue` provides several different methods for
+/// An [`EventQueue`] provides several different methods for
 /// scheduling new events, but does not publicly support
 /// popping; popping events from the queue only occurs during
-/// [`Simulation::run()`](crate::Simulation::run).
+/// [`Simulation::run()`].
 ///
 /// # Safety
 ///
 /// The safe methods provided for scheduling new events will
 /// compare the desired execution time against the current
 /// clock time. Scheduling an event for a time that is already
-/// past will result in a
-/// [`Error::BackInTime`](crate::Error::BackInTime) without
+/// past will result in a [`Error::BackInTime`] without
 /// modifying the queue. This error indicates that client code
 /// probably has a logical error, as rewinding the clock in a
 /// discrete-event simulation should be very rare.
@@ -87,6 +87,9 @@ impl SimTime for isize {}
 /// loops, inconsistencies in the simulation state, or other
 /// problems that warrant an explicit "pay attention here"
 /// marker on call sites.
+///
+/// [`Simulation::run()`]: crate::Simulation::run
+/// [`Error::BackInTime`]: crate::Error::BackInTime
 #[derive(Debug, Default)]
 pub struct EventQueue<State, Time>
 where
@@ -118,10 +121,11 @@ where
     /// # Errors
     ///
     /// If `time` is less than the current clock time on
-    /// `self`, returns a
-    /// [`Error::BackInTime`](crate::Error::BackInTime) to
+    /// `self`, returns a [`Error::BackInTime`] to
     /// indicate the likely presence of a logical bug at
     /// the call site, with no modifications to the queue.
+    ///
+    /// [`Error::BackInTime`]: crate::Error::BackInTime
     pub fn schedule<EventType>(&mut self, event: EventType, time: Time) -> crate::Result
     where
         EventType: Event<State, Time> + 'static,
@@ -162,10 +166,11 @@ where
     /// # Errors
     ///
     /// If `time` is less than the current clock time on
-    /// `self`, returns a
-    /// [`Error::BackInTime`](crate::Error::BackInTime) to
+    /// `self`, returns a [`Error::BackInTime`] to
     /// indicate the likely presence of a logical bug at
     /// the call site, with no modifications to the queue.
+    ///
+    /// [`Error::BackInTime`]: crate::Error::BackInTime
     pub fn schedule_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) -> crate::Result {
         if time < self.last_execution_time {
             return Err(crate::Error::BackInTime);

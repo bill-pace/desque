@@ -2,7 +2,7 @@ use crate::{Event, SimState, SimTime};
 use std::cmp::Ordering;
 
 /// Helper struct for the event queue. This struct
-/// holds a Box to the event itself alongside the
+/// holds a [`Box`] to the event itself alongside the
 /// data necessary to sort events within the priority
 /// queue, namely the execution time and a record of
 /// the event's insertion sequence.

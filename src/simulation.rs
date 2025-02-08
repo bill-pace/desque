@@ -16,9 +16,12 @@ use std::fmt::{Debug, Formatter};
 /// becomes empty.
 ///
 /// Making this trait generic over the type used for clock time
-/// enables the `is_complete()` method to list an instance of
+/// enables the [`is_complete()`] method to list an instance of
 /// that type as a parameter and have full access to the specific
 /// type in client implementations.
+///
+/// [`Simulation::run()`]: Simulation::run
+/// [`is_complete()`]: SimState::is_complete
 pub trait SimState<Time>
 where
     Time: SimTime,
@@ -26,13 +29,16 @@ where
     /// Reports whether the simulation has run to completion.
     /// This method will be invoked in [`Simulation::run()`]
     /// before popping each event off the queue: `true` indicates
-    /// that the simulation is finished and that `run()` should
-    /// break out of its loop, whereas `false` means that `run()`
+    /// that the simulation is finished and that [`run()`] should
+    /// break out of its loop, whereas `false` means that [`run()`]
     /// should continue with the next scheduled event.
     ///
     /// The default implementation always returns false, which
     /// results in the simulation continuing until the event
     /// queue empties out.
+    ///
+    /// [`Simulation::run()`]: Simulation::run
+    /// [`run()`]: Simulation::run
     // expect that other implementations will make use of the
     // argument even though this one doesn't
     #[allow(unused_variables)]
@@ -42,7 +48,7 @@ where
 }
 
 /// The defining struct for a discrete-event simulation in
-/// desque. A Simulation owns both its state and its
+/// desque. A [`Simulation`] owns both its state and its
 /// event queue, providing public access to each so clients
 /// can set up and tear down instances as needed - for
 /// example, scheduling initial events or writing the final
@@ -53,12 +59,17 @@ where
 /// 1. Initialize a struct that implements [`SimState`].
 /// 2. Pass this struct and the start time to `new()`.
 /// 3. Schedule at least one initial event.
-/// 4. Call `run()`. Handle any error it might return.
-/// 5. Use the `state` field to finish processing the sim.
+/// 4. Call [`run()`]. Handle any error it might return.
+/// 5. Use the [`state()`] or [`state_mut()`] accessors
+///    to finish processing the results.
 ///
-/// A Simulation also provides the same event-scheduling
+/// A [`Simulation`] also provides the same event-scheduling
 /// interface as its underlying queue for the purpose of
 /// making step 3 slightly simpler.
+///
+/// [`run()`]: Simulation::run
+/// [`state()`]: Simulation::state
+/// [`state_mut()`]: Simulation::state_mut
 #[derive(Debug, Default)]
 pub struct Simulation<State, Time>
 where
@@ -93,11 +104,11 @@ where
     ///
     /// Follows this loop:
     ///
-    /// 1. Does `state.is_complete()` return true? If so, return `Ok(())`.
+    /// 1. Does [`state.is_complete()`] return true? If so, return `Ok(())`.
     /// 2. Attempt to pop the next event from the queue. If there isn't
     ///    one, return `Ok(())`.
-    /// 3. Pass exclusive references to the `state` and `event_queue`
-    ///    fields to `event.execute()`.
+    /// 3. Pass exclusive references to the state and event queue to
+    ///    [`event.execute()`].
     ///     1. If an error is returned, forward it as-is to the caller.
     ///     2. Otherwise, go back to step 1.
     ///
@@ -107,15 +118,21 @@ where
     /// here they will be passed back to the caller, unchanged. The two
     /// variants directly supported are:
     ///
-    /// 1. [`Error::BackInTime`](crate::Error::BackInTime) means that
-    ///    client code attempted to schedule an event at some point in
-    ///    the simulation's past. This error is a likely indicator that
-    ///    client code contains a logical bug, as most discrete-event
-    ///    simulations would never rewind their clocks.
-    /// 2. [`Error::BadExecution`](crate::Error::BadExecution) wraps a
-    ///    client-generated error in a way that is type-safe to feed back
-    ///    through this method. To handle the underlying error, either
-    ///    unpack the `BadExecution` or call its `source()` method.
+    /// 1. [`Error::BackInTime`] means that client code attempted to
+    ///    schedule an event at some point in the simulation's past.
+    ///    This error is a likely indicator that client code contains
+    ///    a logical bug, as most discrete-event simulations would
+    ///    never rewind their clocks.
+    /// 2. [`Error::BadExecution`] wraps a client-generated error in a
+    ///    way that is type-safe to feed back through this method. To
+    ///    handle the underlying error, either unpack the [`BadExecution`]
+    ///    or call its `source()` method.
+    ///
+    /// [`state.is_complete()`]: SimState::is_complete
+    /// [`event.execute()`]: Event::execute
+    /// [`Error::BackInTime`]: crate::Error::BackInTime
+    /// [`Error::BadExecution`]: crate::Error::BadExecution
+    /// [`BadExecution`]: crate::Error::BadExecution
     // the detected panic in here is a false alarm as the call to unwrap
     // is immediately preceded by a check that the Option is Some
     #[allow(clippy::missing_panics_doc)]
@@ -130,8 +147,7 @@ where
                 return Ok(());
             }
 
-            let mut next_event = next_event
-                .expect("next_event should not be None");
+            let mut next_event = next_event.expect("next_event should not be None");
             next_event.execute(&mut self.state, &mut self.event_queue)?;
         }
     }
@@ -142,9 +158,11 @@ where
     ///
     /// If `time` is less than the current clock time on
     /// `self`, returns a
-    /// [`Error::BackInTime`](crate::Error::BackInTime) to
-    /// indicate the likely presence of a logical bug at
-    /// the call site, with no modifications to the queue.
+    /// [`Error::BackInTime`] to indicate the likely presence
+    /// of a logical bug at the call site, with no modifications
+    /// to the queue.
+    ///
+    /// [`Error::BackInTime`]: crate::Error::BackInTime
     pub fn schedule<EventType>(&mut self, event: EventType, time: Time) -> crate::Result
     where
         EventType: Event<State, Time> + 'static,
@@ -175,10 +193,11 @@ where
     /// # Errors
     ///
     /// If `time` is less than the current clock time on
-    /// `self`, returns a
-    /// [`Error::BackInTime`](crate::Error::BackInTime) to
-    /// indicate the likely presence of a logical bug at
-    /// the call site, with no modifications to the queue.
+    /// `self`, returns a [`Error::BackInTime`] to indicate the
+    /// likely presence of a logical bug at the call site, with
+    /// no modifications to the queue.
+    ///
+    /// [`Error::BackInTime`]: crate::Error::BackInTime
     pub fn schedule_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) -> crate::Result {
         self.event_queue.schedule_from_boxed(event, time)
     }
@@ -197,22 +216,22 @@ where
     pub unsafe fn schedule_unchecked_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) {
         self.event_queue.schedule_unchecked_from_boxed(event, time);
     }
-    
+
     /// Get a shared reference to the simulation state.
     pub fn state(&self) -> &State {
         &self.state
     }
-    
+
     /// Get an exclusive reference to the simulation state.
     pub fn state_mut(&mut self) -> &mut State {
         &mut self.state
     }
-    
+
     /// Get a shared reference to the event queue.
     pub fn event_queue(&self) -> &EventQueue<State, Time> {
         &self.event_queue
     }
-    
+
     /// Get an exclusive reference to the event queue.
     pub fn event_queue_mut(&mut self) -> &mut EventQueue<State, Time> {
         &mut self.event_queue
