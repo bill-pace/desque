@@ -96,6 +96,7 @@ impl SimState<F64Time> for Store {
 }
 
 /// Customer enters the store
+#[derive(Debug)]
 struct ArrivalEvent {}
 
 impl ArrivalEvent {
@@ -129,6 +130,7 @@ impl OkEvent<Store, F64Time> for ArrivalEvent {
 }
 
 /// Customer departs the store
+#[derive(Debug)]
 struct ServiceEvent {}
 
 impl ServiceEvent {
@@ -165,6 +167,7 @@ impl OkEvent<Store, F64Time> for ServiceEvent {
 
 /// Mark simulation as complete and add time in queue
 /// for customers who haven't reached the counter yet
+#[derive(Debug)]
 struct EndEvent {}
 
 impl EndEvent {

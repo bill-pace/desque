@@ -251,6 +251,7 @@ mod tests {
     }
     impl SimState<i32> for State {}
 
+    #[derive(Debug)]
     struct TestEvent {
         value: i32,
     }

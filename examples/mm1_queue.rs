@@ -83,6 +83,7 @@ impl SimState<Time> for Store {
 
 /// Handles the arrival of a customer to the store's
 /// checkout queue.
+#[derive(Debug)]
 struct ArrivalEvent {}
 
 impl ArrivalEvent {
@@ -126,6 +127,7 @@ impl Event<Store, Time> for ArrivalEvent {
 
 /// Handle the completion of a customer's service time
 /// at the counter.
+#[derive(Debug)]
 struct ServiceEvent {}
 
 impl ServiceEvent {

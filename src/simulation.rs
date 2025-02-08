@@ -224,6 +224,7 @@ mod tests {
         }
     }
 
+    #[derive(Debug)]
     struct TestEvent {
         value: u32,
     }
@@ -235,6 +236,7 @@ mod tests {
         }
     }
 
+    #[derive(Debug)]
     struct CompletionEvent {}
 
     impl OkEvent<State, u32> for CompletionEvent {
