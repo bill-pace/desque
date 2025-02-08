@@ -181,20 +181,29 @@ fn run_sim(seed: u64, num_servers: u32, service_rate: f64) -> (usize, f64) {
 #[test]
 fn single_server_meets_expectation() {
     let (customers_served, time_in_queue) = run_sim(11434450237083315284, 1, 6.0);
-    assert_eq!(2124, customers_served, "unexpected number of customers made it through the system");
+    assert_eq!(
+        2124, customers_served,
+        "unexpected number of customers made it through the system"
+    );
     assert_eq!(766.9529196007231, time_in_queue, "unexpected amount of time in queue");
 }
 
 #[test]
 fn double_server_meets_expectations() {
     let (customers_served, time_in_queue) = run_sim(7082446179938253086, 2, 3.0);
-    assert_eq!(2147, customers_served, "unexpected number of customers made it through the system");
+    assert_eq!(
+        2147, customers_served,
+        "unexpected number of customers made it through the system"
+    );
     assert_eq!(445.4103889016597, time_in_queue, "unexpected amount of time in queue");
 }
 
 #[test]
 fn triple_server_meets_expectation() {
     let (customers_served, time_in_queue) = run_sim(13009076887838060007, 3, 2.0);
-    assert_eq!(2102, customers_served, "unexpected number of customers made it through the system");
+    assert_eq!(
+        2102, customers_served,
+        "unexpected number of customers made it through the system"
+    );
     assert_eq!(593.794756470991, time_in_queue, "unexpected amount of time in queue");
 }
