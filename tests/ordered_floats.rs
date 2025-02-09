@@ -155,12 +155,10 @@ mod ordered_float_tests {
     fn run_sim(seed: u64, num_servers: u32, service_rate: f64) -> (usize, NotNan<f64>) {
         let rng = Pcg64::seed_from_u64(seed);
         let store = Store::new(num_servers, service_rate, rng);
-        
-        let start_time = NotNan::new(0.0)
-            .expect("start time should not be NaN");
-        let end_time = NotNan::new(540.0)
-            .expect("end time should not be NaN");
-        
+
+        let start_time = NotNan::new(0.0).expect("start time should not be NaN");
+        let end_time = NotNan::new(540.0).expect("end time should not be NaN");
+
         let mut sim = Simulation::new(store, start_time);
         EndEvent::schedule(end_time, sim.event_queue_mut());
         ArrivalEvent::schedule_first(&mut sim);
@@ -179,9 +177,11 @@ mod ordered_float_tests {
             2124, customers_served,
             "unexpected number of customers made it through the system"
         );
-        
-        let expected_time_in_queue = NotNan::new(766.9529196007231)
-            .expect("expected time in queue should not be NaN");
-        assert_eq!(expected_time_in_queue, time_in_queue, "unexpected amount of time in queue");
+
+        let expected_time_in_queue = NotNan::new(766.9529196007231).expect("expected time in queue should not be NaN");
+        assert_eq!(
+            expected_time_in_queue, time_in_queue,
+            "unexpected amount of time in queue"
+        );
     }
 }
