@@ -16,9 +16,9 @@ use std::fmt::{Debug, Formatter};
 /// becomes empty.
 ///
 /// Making this trait generic over the type used for clock time
-/// enables the [`is_complete()`] method to list an instance of
-/// that type as a parameter and have full access to the specific
-/// type in client implementations.
+/// enables the [`is_complete()`] method to take a shared
+/// reference to that type with full access to any method with
+/// a `&self` receiver.
 ///
 /// [`Simulation::run()`]: Simulation::run
 /// [`is_complete()`]: SimState::is_complete

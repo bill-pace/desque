@@ -11,7 +11,7 @@ use std::fmt::Debug;
 
 /// The type used for a simulation's clock, kept generic to
 /// support as many variations of clock as possible. This
-/// trait is a superset of [`Ord`], [`Clone`], and [`Debug`] with no
+/// trait is a superset of [`Ord`] and [`Debug`] with no
 /// additional requirements or functionality.
 ///
 /// Your implementation of this trait should use the [`Ord`]
@@ -22,8 +22,8 @@ use std::fmt::Debug;
 /// std::cmp::Ordering::Less` then event A will execute
 /// before event B.
 ///
-/// [`Debug`] is necessary only for the implementation
-/// of Debug on [`EventQueue`].
+/// [`Debug`] is necessary for the implementation of Debug
+/// on [`EventQueue`].
 ///
 /// Implementations are provided for integral builtin types,
 /// but not for floating-point builtin types as the latter do
@@ -32,7 +32,10 @@ use std::fmt::Debug;
 /// `ordered-float` feature (and so add a dependency on the
 /// [`ordered-float`] crate) to gain access to an implementation
 /// on the [`OrderedFloat`] and [`NotNan`] structs, or create
-/// your own wrapper that guarantees full ordering.
+/// your own wrapper that guarantees full ordering. If you
+/// intend to use [`OrderedFloat`] or [`NotNan`] with your own
+/// custom types, ensure you also implement [`Debug`] to
+/// satisfy the additional requirement on `SimTime`.
 ///
 /// [`ordered-float`]: https://docs.rs/ordered-float/4
 /// [`OrderedFloat`]: https://docs.rs/ordered-float/4/ordered_float/struct.OrderedFloat.html
