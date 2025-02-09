@@ -11,6 +11,9 @@ authors = ["Bill Pace"]
 keywords = ["discrete-event", "simulation", "des"]
 categories = ["simulation"]
 
+[dependencies]
+ordered-float = { version = "4", optional = true }
+
 [dev-dependencies]
 rand = "0.9"
 rand_distr = "0.5"

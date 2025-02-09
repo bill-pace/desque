@@ -1,3 +1,5 @@
+//! # Overview
+//!
 //! desque is a lightweight framework for developing discrete-event simulations, depending only on the Rust
 //! standard library. While desque provides little more than an event queue and a runner, both constructs
 //! make use of generic templating to provide you with control over how a desque simulation operates:
@@ -18,6 +20,18 @@
 //! a different thread. As desque provides each executing event exclusive access to simulation state, it
 //! is straightforward for simulation developers to ensure that replications on separate threads are
 //! isolated from each other, shielding them from unplanned dependencies which may affect statistical results.
+//!
+//! # Features
+//!
+//! desque offers one feature, `ordered-float`, which provides the option to add a dependency on the
+//! [`ordered-float`] crate so that its [`OrderedFloat`] and [`NotNan`] structs may be used as [`SimTime`].
+//! Its `std` feature will be enabled, as desque requires access to the standard library anyway, but no
+//! other features of [`ordered-float`] are enforced - add them in your Cargo.toml if you need them. By
+//! default, this feature is disabled in desque to avoid a potentially unnecessary dependency.
+//!
+//! [`ordered-float`]: https://docs.rs/ordered-float/4
+//! [`OrderedFloat`]: https://docs.rs/ordered-float/4/ordered_float/struct.OrderedFloat.html
+//! [`NotNan`]: https://docs.rs/ordered-float/4/ordered_float/struct.NotNan.html
 
 mod error;
 mod events;

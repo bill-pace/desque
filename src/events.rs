@@ -34,8 +34,15 @@ use std::fmt::Debug;
 /// Implementations are provided for integral builtin types,
 /// but not for floating-point builtin types as the latter do
 /// not implement [`Ord`]. If you wish to use either [`f32`] or
-/// [`f64`] as your [`SimTime`], you will need to wrap them in
-/// a type that guarantees full ordering.
+/// [`f64`] as your [`SimTime`], either enable the
+/// `ordered-float` feature (and so add a dependency on the
+/// [`ordered-float`] crate) to gain access to an implementation
+/// on the [`OrderedFloat`] and [`NotNan`] structs, or create
+/// your own wrapper that guarantees full ordering.
+///
+/// [`ordered-float`]: https://docs.rs/ordered-float/4
+/// [`OrderedFloat`]: https://docs.rs/ordered-float/4/ordered_float/struct.OrderedFloat.html
+/// [`NotNan`]: https://docs.rs/ordered-float/4/ordered_float/struct.NotNan.html
 pub trait SimTime: Ord + Clone + Debug {}
 
 impl SimTime for u8 {}
@@ -50,6 +57,12 @@ impl SimTime for i32 {}
 impl SimTime for i64 {}
 impl SimTime for i128 {}
 impl SimTime for isize {}
+
+#[cfg(feature = "ordered-float")]
+impl<Float> SimTime for ordered_float::OrderedFloat<Float> where Float: ordered_float::FloatCore + Debug {}
+
+#[cfg(feature = "ordered-float")]
+impl<Float> SimTime for ordered_float::NotNan<Float> where Float: ordered_float::FloatCore + Debug {}
 
 /// The priority queue of scheduled events. Events will execute
 /// in ascending order of execution time, with ties broken by
