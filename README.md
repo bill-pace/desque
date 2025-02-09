@@ -30,7 +30,7 @@ desque requires access to the Rust standard library. Rust language versions of a
 1.63.0 provide all necessary features for this library and its dev dependencies.
 
 By default, desque has no runtime dependencies. However, enabling the `ordered-float`
-feature adds a dependency on the `[ordered-float](https://crates.io/crates/ordered-float)`
+feature adds a dependency on the [`ordered-float`](https://crates.io/crates/ordered-float)
 crate to allow using its `OrderedFloat` and `NotNan` structs as time values in desque.
 
 # License
