@@ -1,5 +1,5 @@
-/// Types of errors that may be encountered while
-/// executing a simulation built with this framework.
+/// Errors that may be encountered while executing
+/// a simulation.
 ///
 /// The [`BackInTime`] variant originates from the
 /// safe interface of the [`EventQueue`] to indicate
@@ -69,7 +69,10 @@ impl std::error::Error for Error {
     }
 }
 
-/// A type alias for `std::result::Result<(), desque::Error>`
-/// that simplifies the signatures of various functions in
-/// desque.
+/// [`std::result::Result`]`<(), `[`desque::Error`]`>`
+///
+/// A type alias that simplifies the signatures of
+/// various functions in desque.
+///
+/// [`desque::Error`]: Error
 pub type Result = std::result::Result<(), Error>;

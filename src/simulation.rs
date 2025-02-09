@@ -2,8 +2,9 @@ use crate::{Event, EventQueue, SimTime};
 
 use std::fmt::{Debug, Formatter};
 
-/// The type used to represent a simulation's overall state
-/// which may include to-date summary statistics, collections
+/// The generic type used for a simulation's overall state.
+///
+/// This type may include to-date summary statistics, collections
 /// of simulated entities, terrain maps, historical records of
 /// simulated events, or whatever else is necessary to describe
 /// the real-world process or phenomenon in a program.
@@ -50,6 +51,9 @@ where
     }
 }
 
+/// Contains the event queue and other state belonging to
+/// a simulation.
+///
 /// The defining struct for a discrete-event simulation in
 /// desque. A [`Simulation`] owns both its state and its
 /// event queue, providing public access to each so clients

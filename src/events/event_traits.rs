@@ -2,6 +2,7 @@ use super::{EventQueue, SimState, SimTime};
 use std::fmt::Debug;
 
 /// A behavior or state change that occurs within a simulation.
+///
 /// This trait has one required method that describes what
 /// happens when the implementing type executes. This trait is
 /// generic over the types used to represent simulation state
@@ -52,7 +53,9 @@ where
     fn execute(&mut self, simulation_state: &mut State, event_queue: &mut EventQueue<State, Time>) -> crate::Result;
 }
 
-/// An [`Event`] that is guaranteed not to return a [`Error`] on execution. The [`execute()`] method on this
+/// An [`Event`] that is guaranteed not to return a [`Error`] on execution.
+///
+/// The [`execute()`] method on this
 /// trait differs from [`Event::execute()`] only by omitting the return type. An implementation of [`Event`] is
 /// provided for all implementors of this trait which simply invokes [`OkEvent::execute()`] then returns `Ok(())`.
 ///

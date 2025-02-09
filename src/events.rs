@@ -9,10 +9,11 @@ use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 use std::fmt::Debug;
 
-/// The type used for a simulation's clock, kept generic to
-/// support as many variations of clock as possible. This
-/// trait is a superset of [`Ord`] and [`Debug`] with no
-/// additional requirements or functionality.
+/// The generic type used for a simulation's clock.
+///
+/// Kept generic to support as many variations of clock as
+/// possible. This trait is a superset of [`Ord`] and [`Debug`]
+/// with no additional requirements or functionality.
 ///
 /// Your implementation of this trait should use the [`Ord`]
 /// trait to account for not only the overall sequencing of
@@ -61,7 +62,9 @@ impl<Float> SimTime for ordered_float::OrderedFloat<Float> where Float: ordered_
 #[cfg(feature = "ordered-float")]
 impl<Float> SimTime for ordered_float::NotNan<Float> where Float: ordered_float::FloatCore + Debug {}
 
-/// The priority queue of scheduled events. Events will execute
+/// Priority queue of scheduled events.
+///
+/// Events will execute
 /// in ascending order of execution time, with ties broken by
 /// the order in which they were pushed onto the queue. This
 /// tiebreaker is in addition to any built-in to the
