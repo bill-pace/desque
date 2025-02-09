@@ -37,12 +37,15 @@ where
     /// results in the simulation continuing until the event
     /// queue empties out.
     ///
+    /// The `current_time` argument will provide shared access
+    /// to the internally tracked simulation clock.
+    ///
     /// [`Simulation::run()`]: Simulation::run
     /// [`run()`]: Simulation::run
     // expect that other implementations will make use of the
     // argument even though this one doesn't
     #[allow(unused_variables)]
-    fn is_complete(&self, current_time: Time) -> bool {
+    fn is_complete(&self, current_time: &Time) -> bool {
         false
     }
 }
@@ -259,7 +262,7 @@ mod tests {
         complete: bool,
     }
     impl SimState<u32> for State {
-        fn is_complete(&self, _: u32) -> bool {
+        fn is_complete(&self, _: &u32) -> bool {
             self.complete
         }
     }

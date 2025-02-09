@@ -7,9 +7,9 @@ use std::fmt::Debug;
 /// generic over the types used to represent simulation state
 /// and clock time to enable your implementations of each trait
 /// to work together within this framework.
-/// 
+///
 /// Requiring implementors to be [`Debug`] enables printing the
-/// full contents of an [`EventQueue`] when necessary. 
+/// full contents of an [`EventQueue`] when necessary.
 ///
 /// Note that desque does not directly support the notion of
 /// interrupting events, so if you need that functionality then
@@ -55,7 +55,7 @@ where
 /// An [`Event`] that is guaranteed not to return a [`Error`] on execution. The [`execute()`] method on this
 /// trait differs from [`Event::execute()`] only by omitting the return type. An implementation of [`Event`] is
 /// provided for all implementors of this trait which simply invokes [`OkEvent::execute()`] then returns `Ok(())`.
-/// 
+///
 /// As with the requirement on [`Event`], implementing [`Debug`] enables an [`EventQueue`] to print all of its
 /// contents when client code deems it necessary.
 ///

@@ -47,7 +47,7 @@ mod ordered_float_tests {
     }
 
     impl SimState<NotNan<f64>> for Store {
-        fn is_complete(&self, _: NotNan<f64>) -> bool {
+        fn is_complete(&self, _: &NotNan<f64>) -> bool {
             self.complete
         }
     }
@@ -78,7 +78,7 @@ mod ordered_float_tests {
         fn execute(&mut self, simulation_state: &mut Store, event_queue: &mut EventQueue<Store, NotNan<f64>>) {
             let customer = Customer {
                 service_time_random_draw: simulation_state.rng.random(),
-                arrival_time: event_queue.current_time(),
+                arrival_time: *event_queue.current_time(),
             };
 
             if simulation_state.servers_busy < simulation_state.num_servers {
@@ -165,7 +165,7 @@ mod ordered_float_tests {
 
         sim.run().expect("simulation should complete normally");
 
-        assert_eq!(end_time, sim.event_queue().current_time(), "unexpected end time");
+        assert_eq!(end_time, *sim.event_queue().current_time(), "unexpected end time");
 
         (sim.state().customers_served, sim.state().total_time_in_queue)
     }

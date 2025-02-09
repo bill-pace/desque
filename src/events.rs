@@ -22,12 +22,6 @@ use std::fmt::Debug;
 /// std::cmp::Ordering::Less` then event A will execute
 /// before event B.
 ///
-/// The [`Clone`] trait is required to enable the
-/// [`EventQueue::current_time()`] method to hand back
-/// a copy of the current time, protecting its own source of
-/// truth while allowing you to do whatever you need to do
-/// with your copy.
-///
 /// [`Debug`] is necessary only for the implementation
 /// of Debug on [`EventQueue`].
 ///
@@ -43,7 +37,7 @@ use std::fmt::Debug;
 /// [`ordered-float`]: https://docs.rs/ordered-float/4
 /// [`OrderedFloat`]: https://docs.rs/ordered-float/4/ordered_float/struct.OrderedFloat.html
 /// [`NotNan`]: https://docs.rs/ordered-float/4/ordered_float/struct.NotNan.html
-pub trait SimTime: Ord + Clone + Debug {}
+pub trait SimTime: Ord + Debug {}
 
 impl SimTime for u8 {}
 impl SimTime for u16 {}
@@ -239,8 +233,8 @@ where
     }
 
     /// Clones the simulation's current clock time.
-    pub fn current_time(&self) -> Time {
-        self.last_execution_time.clone()
+    pub fn current_time(&self) -> &Time {
+        &self.last_execution_time
     }
 }
 
@@ -323,7 +317,7 @@ mod tests {
         queue.next().unwrap();
         assert_eq!(
             -1,
-            queue.current_time(),
+            *queue.current_time(),
             "current time did not update when popping event scheduled in the past"
         );
     }

@@ -59,7 +59,7 @@ impl Store {
 }
 
 impl SimState<F64Time> for Store {
-    fn is_complete(&self, _: F64Time) -> bool {
+    fn is_complete(&self, _: &F64Time) -> bool {
         self.complete
     }
 }
@@ -90,7 +90,7 @@ impl OkEvent<Store, F64Time> for ArrivalEvent {
     fn execute(&mut self, simulation_state: &mut Store, event_queue: &mut EventQueue<Store, F64Time>) {
         let customer = Customer {
             service_time_random_draw: simulation_state.rng.random(),
-            arrival_time: event_queue.current_time(),
+            arrival_time: *event_queue.current_time(),
         };
 
         if simulation_state.servers_busy < simulation_state.num_servers {

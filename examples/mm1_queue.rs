@@ -76,7 +76,7 @@ impl Store {
 impl SimState<Time> for Store {
     /// Checks whether the current simulation time is
     /// at least the intended end time.
-    fn is_complete(&self, current_time: Time) -> bool {
+    fn is_complete(&self, current_time: &Time) -> bool {
         current_time.0 >= self.end_time
     }
 }
@@ -92,14 +92,14 @@ impl ArrivalEvent {
     fn schedule(simulation_state: &mut Store, event_queue: &mut EventQueue<Store, Time>) -> Result {
         let distribution = Exp::new(1.0 / 30.0).unwrap();
         let next_arrival_delay = distribution.sample(&mut simulation_state.rng);
-        let next_arrival_time = event_queue.current_time() + next_arrival_delay;
+        let next_arrival_time = *event_queue.current_time() + next_arrival_delay;
         event_queue.schedule(ArrivalEvent {}, next_arrival_time)
     }
 
     fn schedule_first(sim: &mut Simulation<Store, Time>) -> Result {
         let distribution = Exp::new(1.0 / 30.0).unwrap();
         let next_arrival_delay = distribution.sample(&mut sim.state_mut().rng);
-        let next_arrival_time = sim.event_queue().current_time() + next_arrival_delay;
+        let next_arrival_time = *sim.event_queue().current_time() + next_arrival_delay;
         sim.event_queue_mut().schedule(Self {}, next_arrival_time)
     }
 }
@@ -143,7 +143,7 @@ impl ServiceEvent {
     fn schedule(simulation_state: &mut Store, event_queue: &mut EventQueue<Store, Time>) -> Result {
         let distribution = Exp::new(1.0 / 20.0).unwrap();
         let service_length = distribution.sample(&mut simulation_state.rng);
-        let service_completion_time = event_queue.current_time() + service_length;
+        let service_completion_time = *event_queue.current_time() + service_length;
         event_queue.schedule(ServiceEvent {}, service_completion_time)
     }
 }
