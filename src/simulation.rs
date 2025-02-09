@@ -9,9 +9,9 @@ use std::fmt::{Debug, Formatter};
 /// the real-world process or phenomenon in a program.
 ///
 /// This trait has only one method, which provides a way for the
-/// [`Simulation::run()`] method to ask whether it should
-/// continue executing events. The default implementation of this
-/// method will always answer "yes," and so a simulation running
+/// [`Simulation::run()`] method to ask whether it should wrap
+/// up event execution. The default implementation of this
+/// method will always answer "no," and so a simulation running
 /// with that implementation will continue until the event queue
 /// becomes empty.
 ///
