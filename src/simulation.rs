@@ -56,10 +56,10 @@ where
 ///
 /// The defining struct for a discrete-event simulation in
 /// desque. A [`Simulation`] owns both its state and its
-/// event queue, providing public access to each so clients
-/// can set up and tear down instances as needed - for
-/// example, scheduling initial events or writing the final
-/// state to output.
+/// event queue, providing both shared and mutable access
+/// to each so clients can set up and tear down instances
+/// as needed - for example, scheduling initial events or
+/// writing the final state to output.
 ///
 /// The expected workflow for a Simulation is:
 ///
@@ -133,13 +133,14 @@ where
     /// 2. [`Error::BadExecution`] wraps a client-generated error in a
     ///    way that is type-safe to feed back through this method. To
     ///    handle the underlying error, either unpack the [`BadExecution`]
-    ///    or call its `source()` method.
+    ///    or call its [`source()`] method.
     ///
     /// [`state.is_complete()`]: SimState::is_complete
     /// [`event.execute()`]: Event::execute
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     /// [`Error::BadExecution`]: crate::Error::BadExecution
     /// [`BadExecution`]: crate::Error::BadExecution
+    /// [`source()`]: crate::Error#method.source
     // the detected panic in here is a false alarm as the call to unwrap
     // is immediately preceded by a check that the Option is Some
     #[allow(clippy::missing_panics_doc)]

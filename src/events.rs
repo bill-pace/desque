@@ -64,12 +64,12 @@ impl<Float> SimTime for ordered_float::NotNan<Float> where Float: ordered_float:
 
 /// Priority queue of scheduled events.
 ///
-/// Events will execute
-/// in ascending order of execution time, with ties broken by
-/// the order in which they were pushed onto the queue. This
-/// tiebreaker is in addition to any built-in to the
-/// implementation of [`SimTime`] used for the clock as
-/// a way to stabilize the observed order of execution.
+/// Events will execute in ascending order of execution time,
+/// with ties broken by the order in which they were pushed
+/// onto the queue. This tiebreaker is in addition to any
+/// built-in to the implementation of [`SimTime`] used for
+/// the clock as a way to stabilize the observed order of
+/// execution.
 ///
 /// This struct is generic over the type used to represent
 /// clock time for the sake of tracking the current time,
@@ -85,11 +85,11 @@ impl<Float> SimTime for ordered_float::NotNan<Float> where Float: ordered_float:
 ///
 /// The safe methods provided for scheduling new events will
 /// compare the desired execution time against the current
-/// clock time. Scheduling an event for a time that is already
-/// past will result in a [`Error::BackInTime`] without
-/// modifying the queue. This error indicates that client code
-/// probably has a logical error, as rewinding the clock in a
-/// discrete-event simulation should be very rare.
+/// clock time. Attempting to schedule an event for a time that
+/// is already past will result in a [`Error::BackInTime`]
+/// without modifying the queue. This error indicates that
+/// client code probably has a logical error, as rewinding the
+/// clock in a discrete-event simulation should be very rare.
 ///
 /// The similar unsafe methods skip the check against the
 /// current clock time, modifying the underlying queue on the

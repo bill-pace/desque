@@ -28,8 +28,10 @@ pub enum Error {
     /// already passed.
     BackInTime,
     /// A client-generated error was encountered
-    /// while executing an event. Call `source()`
+    /// while executing an event. Call [`source()`]
     /// or unpack this value to handle it directly.
+    ///
+    /// [`source()`]: #method.source
     BadExecution(Box<dyn std::error::Error + Send + Sync + 'static>),
 }
 
