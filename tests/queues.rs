@@ -1,3 +1,5 @@
+mod util;
+
 use desque::*;
 use rand::{Rng, SeedableRng};
 use rand_distr::{Distribution, Exp};
@@ -185,7 +187,12 @@ fn single_server_meets_expectation() {
         2124, customers_served,
         "unexpected number of customers made it through the system"
     );
-    assert_eq!(766.9529196007231, time_in_queue, "unexpected amount of time in queue");
+    let expected_time_in_queue = 766.9529196007231;
+    assert_floats_near_equal!(
+        expected_time_in_queue,
+        time_in_queue,
+        "unexpected amount of time in queue"
+    );
 }
 
 #[test]
@@ -195,7 +202,12 @@ fn double_server_meets_expectations() {
         2147, customers_served,
         "unexpected number of customers made it through the system"
     );
-    assert_eq!(445.4103889016597, time_in_queue, "unexpected amount of time in queue");
+    let expected_time_in_queue = 445.4103889016597;
+    assert_floats_near_equal!(
+        expected_time_in_queue,
+        time_in_queue,
+        "unexpected amount of time in queue"
+    );
 }
 
 #[test]
@@ -205,5 +217,10 @@ fn triple_server_meets_expectation() {
         2102, customers_served,
         "unexpected number of customers made it through the system"
     );
-    assert_eq!(593.794756470991, time_in_queue, "unexpected amount of time in queue");
+    let expected_time_in_queue = 593.794756470991;
+    assert_floats_near_equal!(
+        expected_time_in_queue,
+        time_in_queue,
+        "unexpected amount of time in queue"
+    );
 }

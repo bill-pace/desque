@@ -1,5 +1,8 @@
+mod util;
+
 #[cfg(feature = "ordered-float")]
 mod ordered_float_tests {
+    use crate::assert_floats_near_equal;
     use desque::*;
     use ordered_float::NotNan;
     use rand::{Rng, SeedableRng};
@@ -177,10 +180,10 @@ mod ordered_float_tests {
             2124, customers_served,
             "unexpected number of customers made it through the system"
         );
-
-        let expected_time_in_queue = NotNan::new(766.9529196007231).expect("expected time in queue should not be NaN");
-        assert_eq!(
-            expected_time_in_queue, time_in_queue,
+        let expected_time_in_queue = 766.9529196007231;
+        assert_floats_near_equal!(
+            expected_time_in_queue,
+            *time_in_queue,
             "unexpected amount of time in queue"
         );
     }
