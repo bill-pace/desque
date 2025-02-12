@@ -180,11 +180,6 @@ mod ordered_float_tests {
             2124, customers_served,
             "unexpected number of customers made it through the system"
         );
-        let expected_time_in_queue = 766.9529196007231;
-        assert_floats_near_equal!(
-            expected_time_in_queue,
-            *time_in_queue,
-            "unexpected amount of time in queue"
-        );
+        assert_floats_near_equal!(766.9529196007231, *time_in_queue, "unexpected amount of time in queue");
     }
 }
