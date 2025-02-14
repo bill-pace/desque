@@ -238,7 +238,7 @@ where
         }
     }
 
-    /// Clones the simulation's current clock time.
+    /// Get a shared reference to the simulation's current clock time.
     pub fn current_time(&self) -> &Time {
         &self.last_execution_time
     }
