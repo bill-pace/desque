@@ -1,4 +1,4 @@
-use super::{ThreadSafeEvent, ThreadSafeEventQueue, ThreadSafeSimTime};
+use super::{Event, EventQueue, SimTime};
 use std::fmt::Formatter;
 
 /// The generic type used for a simulation's overall state.
@@ -22,9 +22,9 @@ use std::fmt::Formatter;
 ///
 /// [`Simulation::run()`]: crate::serial::Simulation::run
 /// [`is_complete()`]: crate::serial::SimState::is_complete
-pub trait ThreadSafeSimState<Time>: Send + Sync
+pub trait SimState<Time>: Send + Sync
 where
-    Time: ThreadSafeSimTime,
+    Time: SimTime,
 {
     /// Reports whether the simulation has run to completion.
     /// This method will be invoked in [`Simulation::run()`]
@@ -77,30 +77,30 @@ where
 /// [`state()`]: crate::serial::Simulation::state
 /// [`state_mut()`]: crate::serial::Simulation::state_mut
 #[derive(Debug, Default)]
-pub struct ThreadSafeSimulation<State, Time>
+pub struct Simulation<State, Time>
 where
-    State: ThreadSafeSimState<Time>,
-    Time: ThreadSafeSimTime,
+    State: SimState<Time>,
+    Time: SimTime,
 {
     /// A priority queue of events that have been scheduled
     /// to execute, ordered ascending by execution time.
-    event_queue: ThreadSafeEventQueue<State, Time>,
+    event_queue: EventQueue<State, Time>,
     /// The current shared state of the Simulation. Exclusive
     /// access will be granted to each event that executes.
     state: State,
 }
 
-impl<State, Time> ThreadSafeSimulation<State, Time>
+impl<State, Time> Simulation<State, Time>
 where
-    State: ThreadSafeSimState<Time>,
-    Time: ThreadSafeSimTime,
+    State: SimState<Time>,
+    Time: SimTime,
 {
     /// Initialize a Simulation instance with the provided
     /// starting state and an event queue with clock set
     /// to the provided starting time.
     pub fn new(initial_state: State, start_time: Time) -> Self {
         Self {
-            event_queue: ThreadSafeEventQueue::new(start_time),
+            event_queue: EventQueue::new(start_time),
             state: initial_state,
         }
     }
@@ -134,8 +134,8 @@ where
     ///    handle the underlying error, either unpack the [`BadExecution`]
     ///    or call its [`source()`] method.
     ///
-    /// [`state.is_complete()`]: ThreadSafeSimState::is_complete
-    /// [`event.execute()`]: ThreadSafeEvent::execute
+    /// [`state.is_complete()`]: SimState::is_complete
+    /// [`event.execute()`]: Event::execute
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     /// [`Error::BadExecution`]: crate::Error::BadExecution
     /// [`BadExecution`]: crate::Error::BadExecution
@@ -172,7 +172,7 @@ where
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     pub fn schedule<EventType>(&mut self, event: EventType, time: Time) -> crate::Result
     where
-        EventType: ThreadSafeEvent<State, Time> + 'static,
+        EventType: Event<State, Time> + 'static,
     {
         self.event_queue.schedule(event, time)
     }
@@ -190,7 +190,7 @@ where
     /// for the call.
     pub unsafe fn schedule_unchecked<EventType>(&mut self, event: EventType, time: Time)
     where
-        EventType: ThreadSafeEvent<State, Time> + 'static,
+        EventType: Event<State, Time> + 'static,
     {
         self.event_queue.schedule_unchecked(event, time);
     }
@@ -205,7 +205,7 @@ where
     /// no modifications to the queue.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
-    pub fn schedule_from_boxed(&mut self, event: Box<dyn ThreadSafeEvent<State, Time>>, time: Time) -> crate::Result {
+    pub fn schedule_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) -> crate::Result {
         self.event_queue.schedule_from_boxed(event, time)
     }
 
@@ -220,7 +220,7 @@ where
     /// enforced at the call site through some other means. For example, adding a
     /// strictly positive offset to the current clock time to get the `time` argument
     /// for the call.
-    pub unsafe fn schedule_unchecked_from_boxed(&mut self, event: Box<dyn ThreadSafeEvent<State, Time>>, time: Time) {
+    pub unsafe fn schedule_unchecked_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) {
         self.event_queue.schedule_unchecked_from_boxed(event, time);
     }
 
@@ -235,20 +235,20 @@ where
     }
 
     /// Get a shared reference to the event queue.
-    pub fn event_queue(&self) -> &ThreadSafeEventQueue<State, Time> {
+    pub fn event_queue(&self) -> &EventQueue<State, Time> {
         &self.event_queue
     }
 
     /// Get an exclusive reference to the event queue.
-    pub fn event_queue_mut(&mut self) -> &mut ThreadSafeEventQueue<State, Time> {
+    pub fn event_queue_mut(&mut self) -> &mut EventQueue<State, Time> {
         &mut self.event_queue
     }
 }
 
-impl<State, Time> std::fmt::Display for ThreadSafeSimulation<State, Time>
+impl<State, Time> std::fmt::Display for Simulation<State, Time>
 where
-    State: ThreadSafeSimState<Time>,
-    Time: ThreadSafeSimTime,
+    State: SimState<Time>,
+    Time: SimTime,
 {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "Simulation at time {:?}", self.event_queue.current_time())

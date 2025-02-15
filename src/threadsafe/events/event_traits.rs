@@ -1,4 +1,4 @@
-use super::{ThreadSafeEventQueue, ThreadSafeSimState, ThreadSafeSimTime};
+use super::{EventQueue, SimState, SimTime};
 use std::fmt::Debug;
 
 /// A behavior or state change that occurs within a simulation.
@@ -10,7 +10,7 @@ use std::fmt::Debug;
 /// to work together within this framework.
 ///
 /// Requiring implementors to be [`Debug`] enables printing the
-/// full contents of a [`ThreadSafeEventQueue`] when necessary.
+/// full contents of a [`EventQueue`] when necessary.
 /// The [`Send`] and [`Sync`] requirements enable implementors
 /// to be scheduled from any thread, then shared across threads
 /// at execution time.
@@ -20,10 +20,10 @@ use std::fmt::Debug;
 /// you may wish to extend this trait or to otherwise provide a
 /// means for your interruptible events to determine whether they
 /// should execute when popped from the queue.
-pub trait ThreadSafeEvent<State, Time>: Debug + Send + Sync
+pub trait Event<State, Time>: Debug + Send + Sync
 where
-    State: ThreadSafeSimState<Time>,
-    Time: ThreadSafeSimTime,
+    State: SimState<Time>,
+    Time: SimTime,
 {
     /// Update the simulation according to the specific type of event. The simulation will invoke this method
     /// during [`ThreadSafeSimulation::run()`] for each scheduled event in sequence. Exclusive access will be
@@ -48,36 +48,32 @@ where
     ///
     /// See [`Error`] for more details on the variants of this error enum.
     ///
-    /// [`ThreadSafeSimulation::run()`]: crate::threadsafe::ThreadSafeSimulation::run
-    /// [`execute()`]: ThreadSafeEvent::execute
+    /// [`ThreadSafeSimulation::run()`]: crate::threadsafe::Simulation::run
+    /// [`execute()`]: Event::execute
     /// [`dyn std::error::Error`]: std::error::Error
     /// [`Error`]: crate::Error
     /// [`Error::BadExecution`]: crate::Error::BadExecution
-    fn execute(
-        &mut self,
-        simulation_state: &mut State,
-        event_queue: &mut ThreadSafeEventQueue<State, Time>,
-    ) -> crate::Result;
+    fn execute(&mut self, simulation_state: &mut State, event_queue: &mut EventQueue<State, Time>) -> crate::Result;
 }
 
-/// A [`ThreadSafeEvent`] that is guaranteed not to return a [`Error`] on execution.
+/// A [`Event`] that is guaranteed not to return a [`Error`] on execution.
 ///
-/// The [`execute()`] method on this trait differs from [`ThreadSafeEvent::execute()`] only by omitting the
-/// return type. An implementation of [`ThreadSafeEvent`] is provided for all implementors of this trait which
-/// simply invokes [`ThreadSafeOkEvent::execute()`] then returns `Ok(())`.
+/// The [`execute()`] method on this trait differs from [`Event::execute()`] only by omitting the
+/// return type. An implementation of [`Event`] is provided for all implementors of this trait which
+/// simply invokes [`OkEvent::execute()`] then returns `Ok(())`.
 ///
-/// As with the requirement on [`ThreadSafeEvent`], implementing [`Debug`] enables a [`ThreadSafeEventQueue`]
+/// As with the requirement on [`Event`], implementing [`Debug`] enables a [`EventQueue`]
 /// to print all of its contents when client code deems it necessary. [`Send`] and [`Sync`] are similarly
 /// required for the promise that these events can be enqueued from any thread.
 ///
-/// [`execute()`]: ThreadSafeOkEvent::execute
-/// [`Event::execute()`]: ThreadSafeEvent::execute
-/// [`OkEvent::execute()`]: ThreadSafeOkEvent::execute
+/// [`execute()`]: OkEvent::execute
+/// [`Event::execute()`]: Event::execute
+/// [`OkEvent::execute()`]: OkEvent::execute
 /// [`Error`]: crate::Error
-pub trait ThreadSafeOkEvent<State, Time>: Debug + Send + Sync
+pub trait OkEvent<State, Time>: Debug + Send + Sync
 where
-    State: ThreadSafeSimState<Time>,
-    Time: ThreadSafeSimTime,
+    State: SimState<Time>,
+    Time: SimTime,
 {
     /// Update the simulation according to the specific type of event. The simulation will invoke this method
     /// during [`ThreadSafeSimulation::run()`] for each scheduled event in sequence. Exclusive access will be provided
@@ -87,22 +83,18 @@ where
     /// Note that the simulation's clock time, accessible on the `event_queue` parameter, will update before
     /// invoking this method.
     ///
-    /// [`ThreadSafeSimulation::run()`]: crate::threadsafe::ThreadSafeSimulation::run
-    fn execute(&mut self, simulation_state: &mut State, event_queue: &mut ThreadSafeEventQueue<State, Time>);
+    /// [`ThreadSafeSimulation::run()`]: crate::threadsafe::Simulation::run
+    fn execute(&mut self, simulation_state: &mut State, event_queue: &mut EventQueue<State, Time>);
 }
 
-impl<State, Time, OkEventType> ThreadSafeEvent<State, Time> for OkEventType
+impl<State, Time, OkEventType> Event<State, Time> for OkEventType
 where
-    State: ThreadSafeSimState<Time>,
-    Time: ThreadSafeSimTime,
-    OkEventType: ThreadSafeOkEvent<State, Time>,
+    State: SimState<Time>,
+    Time: SimTime,
+    OkEventType: OkEvent<State, Time>,
 {
-    fn execute(
-        &mut self,
-        simulation_state: &mut State,
-        event_queue: &mut ThreadSafeEventQueue<State, Time>,
-    ) -> crate::Result {
-        ThreadSafeOkEvent::execute(self, simulation_state, event_queue);
+    fn execute(&mut self, simulation_state: &mut State, event_queue: &mut EventQueue<State, Time>) -> crate::Result {
+        OkEvent::execute(self, simulation_state, event_queue);
         Ok(())
     }
 }

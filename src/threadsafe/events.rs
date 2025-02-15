@@ -1,10 +1,10 @@
 mod event_holder;
 pub(super) mod event_traits;
 
-use super::ThreadSafeSimState;
+use super::SimState;
 use crate::serial;
 use event_holder::EventHolder;
-use event_traits::ThreadSafeEvent;
+use event_traits::Event;
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 use std::fmt::Debug;
@@ -26,16 +26,16 @@ use std::sync::Mutex;
 /// [`ordered-float`]: https://docs.rs/ordered-float/4
 /// [`OrderedFloat`]: https://docs.rs/ordered-float/4/ordered_float/struct.OrderedFloat.html
 /// [`NotNan`]: https://docs.rs/ordered-float/4/ordered_float/struct.NotNan.html
-pub trait ThreadSafeSimTime: serial::SimTime + Send + Sync {}
+pub trait SimTime: serial::SimTime + Send + Sync {}
 
-impl<T> ThreadSafeSimTime for T where T: serial::SimTime + Send + Sync {}
+impl<T> SimTime for T where T: serial::SimTime + Send + Sync {}
 
 /// Priority queue of scheduled events.
 ///
 /// Events will execute in ascending order of execution time,
 /// with ties broken by the order in which they were pushed
 /// onto the queue. This tiebreaker is in addition to any
-/// built-in to the implementation of [`ThreadSafeSimTime`]
+/// built-in to the implementation of [`SimTime`]
 /// used for the clock as a way to stabilize the observed
 /// order of execution.
 ///
@@ -44,7 +44,7 @@ impl<T> ThreadSafeSimTime for T where T: serial::SimTime + Send + Sync {}
 /// as well over the type used to represent simulation state
 /// so that it can work with appropriate event types.
 ///
-/// A [`ThreadSafeEventQueue`] provides several different
+/// A [`EventQueue`] provides several different
 /// methods for scheduling new events, but does not publicly
 /// support popping; popping events from the queue only occurs
 /// during [`ThreadSafeSimulation::run()`].
@@ -69,23 +69,23 @@ impl<T> ThreadSafeSimTime for T where T: serial::SimTime + Send + Sync {}
 /// problems that warrant an explicit "pay attention here"
 /// marker on call sites.
 ///
-/// [`ThreadSafeSimulation::run()`]: super::ThreadSafeSimulation::run
+/// [`ThreadSafeSimulation::run()`]: super::Simulation::run
 /// [`Error::BackInTime`]: crate::Error::BackInTime
 #[derive(Debug, Default)]
-pub struct ThreadSafeEventQueue<State, Time>
+pub struct EventQueue<State, Time>
 where
-    State: ThreadSafeSimState<Time>,
-    Time: ThreadSafeSimTime,
+    State: SimState<Time>,
+    Time: SimTime,
 {
     events: Mutex<BinaryHeap<Reverse<EventHolder<State, Time>>>>,
     last_execution_time: Time,
     events_added: atomic::AtomicUsize,
 }
 
-impl<State, Time> ThreadSafeEventQueue<State, Time>
+impl<State, Time> EventQueue<State, Time>
 where
-    State: ThreadSafeSimState<Time>,
-    Time: ThreadSafeSimTime,
+    State: SimState<Time>,
+    Time: SimTime,
 {
     /// Construct a new [`EventQueue`] with no scheduled events
     /// and a clock initialized to the provided time.
@@ -115,7 +115,7 @@ where
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     pub fn schedule<EventType>(&self, event: EventType, time: Time) -> crate::Result
     where
-        EventType: ThreadSafeEvent<State, Time> + 'static,
+        EventType: Event<State, Time> + 'static,
     {
         if time < self.last_execution_time {
             return Err(crate::Error::BackInTime);
@@ -149,7 +149,7 @@ where
     /// will also panic.
     pub unsafe fn schedule_unchecked<EventType>(&self, event: EventType, time: Time)
     where
-        EventType: ThreadSafeEvent<State, Time> + 'static,
+        EventType: Event<State, Time> + 'static,
     {
         self.schedule_unchecked_from_boxed(Box::new(event), time);
     }
@@ -170,7 +170,7 @@ where
     /// will also panic.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
-    pub fn schedule_from_boxed(&self, event: Box<dyn ThreadSafeEvent<State, Time>>, time: Time) -> crate::Result {
+    pub fn schedule_from_boxed(&self, event: Box<dyn Event<State, Time>>, time: Time) -> crate::Result {
         if time < self.last_execution_time {
             return Err(crate::Error::BackInTime);
         }
@@ -201,7 +201,7 @@ where
     /// If the mutex protecting the underlying priority queue implementation has
     /// been poisoned by another thread panicking while it is locked, this method
     /// will also panic.
-    pub unsafe fn schedule_unchecked_from_boxed(&self, event: Box<dyn ThreadSafeEvent<State, Time>>, time: Time) {
+    pub unsafe fn schedule_unchecked_from_boxed(&self, event: Box<dyn Event<State, Time>>, time: Time) {
         self.events
             .lock()
             .expect("event queue mutex should not have been poisoned")
@@ -227,7 +227,7 @@ where
     /// If the mutex protecting the underlying priority queue implementation has
     /// been poisoned by another thread panicking while it is locked, this method
     /// will also panic.
-    pub(crate) fn next(&mut self) -> Option<Box<dyn ThreadSafeEvent<State, Time>>> {
+    pub(crate) fn next(&mut self) -> Option<Box<dyn Event<State, Time>>> {
         if let Some(event_holder) = self
             .events
             .lock()
@@ -247,10 +247,10 @@ where
     }
 }
 
-impl<State, Time> std::fmt::Display for ThreadSafeEventQueue<State, Time>
+impl<State, Time> std::fmt::Display for EventQueue<State, Time>
 where
-    State: ThreadSafeSimState<Time>,
-    Time: ThreadSafeSimTime,
+    State: SimState<Time>,
+    Time: SimTime,
 {
     fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(

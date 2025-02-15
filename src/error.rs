@@ -20,9 +20,9 @@
 /// the client side.
 ///
 /// [`EventQueue`]: crate::serial::EventQueue
-/// [`ThreadSafeEventQueue`]: crate::threadsafe::ThreadSafeEventQueue
+/// [`ThreadSafeEventQueue`]: crate::threadsafe::EventQueue
 /// [`Simulation::run()`]: crate::serial::Simulation::run
-/// [`ThreadSafeSimulation::run()`]: crate::threadsafe::ThreadSafeSimulation::run
+/// [`ThreadSafeSimulation::run()`]: crate::threadsafe::Simulation::run
 /// [`BackInTime`]: Error::BackInTime
 /// [`BadExecution`]: Error::BadExecution
 #[derive(Debug)]
