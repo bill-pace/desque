@@ -26,17 +26,24 @@ where
     Time: SimTime,
 {
     /// Update the simulation according to the specific type of event. The simulation will invoke this method
-    /// during [`ThreadSafeSimulation::run()`] for each scheduled event in sequence. Exclusive access will be
-    /// provided to both the simulation's current state and the event queue, allowing for both mutation of the
+    /// during [`Simulation::run()`] for each scheduled event in sequence. Exclusive access will be provided
+    /// to both the simulation's current state and the event queue, allowing for both mutation of the
     /// simulation's state and scheduling of new events.
     ///
-    /// This trait expects implementations of [`execute()`] to be fallible, and [`ThreadSafeSimulation::run()`]
-    /// will bubble any errors back up to the client as a [`Error::BadExecution`]. Successful branches, as well
-    /// as infallible implementations, should simply return `Ok(())` to indicate to
-    /// [`ThreadSafeSimulation::run()`] that it may continue popping events from the queue.
+    /// This trait expects implementations of [`execute()`] to be fallible, and [`Simulation::run()`] will
+    /// bubble any errors back up to the client as a [`Error::BadExecution`]. Successful branches, as well
+    /// as infallible implementations, should simply return `Ok(())` to indicate to [`Simulation::run()`]
+    /// that it may continue popping events from the queue.
     ///
     /// Note that the simulation's clock time, accessible on the `event_queue` parameter, will update before
     /// invoking this method.
+    ///
+    /// # Synchronization
+    ///
+    /// All parameters on this method are exclusive references as a promise that only one event will execute
+    /// at a time, and that event will have full access to the simulation's state and event queue. Shared
+    /// references can be re-borrowed as necessary for any threads spawned in the course of execution. All
+    /// spawned threads should be joined before this method returns, however.
     ///
     /// # Errors
     ///
@@ -48,7 +55,7 @@ where
     ///
     /// See [`Error`] for more details on the variants of this error enum.
     ///
-    /// [`ThreadSafeSimulation::run()`]: crate::threadsafe::Simulation::run
+    /// [`Simulation::run()`]: crate::threadsafe::Simulation::run
     /// [`execute()`]: Event::execute
     /// [`dyn std::error::Error`]: std::error::Error
     /// [`Error`]: crate::Error
@@ -76,14 +83,14 @@ where
     Time: SimTime,
 {
     /// Update the simulation according to the specific type of event. The simulation will invoke this method
-    /// during [`ThreadSafeSimulation::run()`] for each scheduled event in sequence. Exclusive access will be provided
+    /// during [`Simulation::run()`] for each scheduled event in sequence. Exclusive access will be provided
     /// to both the simulation's current state and the event queue, allowing for both mutation of the
     /// simulation's state and scheduling of new events.
     ///
     /// Note that the simulation's clock time, accessible on the `event_queue` parameter, will update before
     /// invoking this method.
     ///
-    /// [`ThreadSafeSimulation::run()`]: crate::threadsafe::Simulation::run
+    /// [`Simulation::run()`]: crate::threadsafe::Simulation::run
     fn execute(&mut self, simulation_state: &mut State, event_queue: &mut EventQueue<State, Time>);
 }
 

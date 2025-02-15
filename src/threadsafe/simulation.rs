@@ -20,6 +20,10 @@ use std::fmt::Formatter;
 /// reference to that type with full access to any method with
 /// a `&self` receiver.
 ///
+/// In keeping with the goal of this module to make a simulation
+/// accessible to multiple threads, all implementors should be
+/// [`Send`] and [`Sync`].
+///
 /// [`Simulation::run()`]: crate::serial::Simulation::run
 /// [`is_complete()`]: crate::serial::SimState::is_complete
 pub trait SimState<Time>: Send + Sync
@@ -53,29 +57,28 @@ where
 /// Contains the event queue and other state belonging to
 /// a simulation.
 ///
-/// The defining struct for a discrete-event simulation in
-/// desque. A [`crate::serial::Simulation`] owns both its state and its
-/// event queue, providing both shared and mutable access
-/// to each so clients can set up and tear down instances
-/// as needed - for example, scheduling initial events or
-/// writing the final state to output.
+/// This form of simulation behaves very similarly to the
+/// [`serial::Simulation`], but is easier to share across
+/// thread boundaries for the sake of enabling events to
+/// divide-and-conquer parts of their execution.
 ///
 /// The expected workflow for a Simulation is:
 ///
-/// 1. Initialize a struct that implements [`crate::serial::SimState`].
+/// 1. Initialize a struct that implements [`SimState`].
 /// 2. Pass this struct and the start time to `new()`.
 /// 3. Schedule at least one initial event.
 /// 4. Call [`run()`]. Handle any error it might return.
 /// 5. Use the [`state()`] or [`state_mut()`] accessors
 ///    to finish processing the results.
 ///
-/// A [`crate::serial::Simulation`] also provides the same event-scheduling
+/// A [`Simulation`] also provides the same event-scheduling
 /// interface as its underlying queue for the purpose of
 /// making step 3 slightly simpler.
 ///
-/// [`run()`]: crate::serial::Simulation::run
-/// [`state()`]: crate::serial::Simulation::state
-/// [`state_mut()`]: crate::serial::Simulation::state_mut
+/// [`serial::Simulation`]: crate::serial::Simulation
+/// [`run()`]: Simulation::run
+/// [`state()`]: Simulation::state
+/// [`state_mut()`]: Simulation::state_mut
 #[derive(Debug, Default)]
 pub struct Simulation<State, Time>
 where
@@ -134,15 +137,20 @@ where
     ///    handle the underlying error, either unpack the [`BadExecution`]
     ///    or call its [`source()`] method.
     ///
+    /// # Panics
+    ///
+    /// This method requires the ability to lock the [`Mutex`] on the
+    /// [`EventQueue`] to find the next event that should be executed
+    /// on each loop iteration. If that [`Mutex`] ever becomes poisoned,
+    /// this method will panic.
+    ///
     /// [`state.is_complete()`]: SimState::is_complete
     /// [`event.execute()`]: Event::execute
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     /// [`Error::BadExecution`]: crate::Error::BadExecution
     /// [`BadExecution`]: crate::Error::BadExecution
     /// [`source()`]: crate::Error#method.source
-    // the detected panic in here is a false alarm as the call to unwrap
-    // is immediately preceded by a check that the Option is Some
-    #[allow(clippy::missing_panics_doc)]
+    /// [`Mutex`]: std::sync::Mutex
     pub fn run(&mut self) -> crate::Result {
         loop {
             if self.state.is_complete(self.event_queue.current_time()) {
@@ -170,7 +178,7 @@ where
     /// to the queue.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
-    pub fn schedule<EventType>(&mut self, event: EventType, time: Time) -> crate::Result
+    pub fn schedule<EventType>(&self, event: EventType, time: Time) -> crate::Result
     where
         EventType: Event<State, Time> + 'static,
     {
@@ -188,7 +196,7 @@ where
     /// enforced at the call site through some other means. For example, adding a
     /// strictly positive offset to the current clock time to get the `time` argument
     /// for the call.
-    pub unsafe fn schedule_unchecked<EventType>(&mut self, event: EventType, time: Time)
+    pub unsafe fn schedule_unchecked<EventType>(&self, event: EventType, time: Time)
     where
         EventType: Event<State, Time> + 'static,
     {
@@ -205,7 +213,7 @@ where
     /// no modifications to the queue.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
-    pub fn schedule_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) -> crate::Result {
+    pub fn schedule_from_boxed(&self, event: Box<dyn Event<State, Time>>, time: Time) -> crate::Result {
         self.event_queue.schedule_from_boxed(event, time)
     }
 
@@ -220,7 +228,7 @@ where
     /// enforced at the call site through some other means. For example, adding a
     /// strictly positive offset to the current clock time to get the `time` argument
     /// for the call.
-    pub unsafe fn schedule_unchecked_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) {
+    pub unsafe fn schedule_unchecked_from_boxed(&self, event: Box<dyn Event<State, Time>>, time: Time) {
         self.event_queue.schedule_unchecked_from_boxed(event, time);
     }
 

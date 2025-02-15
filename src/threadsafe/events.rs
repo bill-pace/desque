@@ -69,8 +69,29 @@ impl<T> SimTime for T where T: serial::SimTime + Send + Sync {}
 /// problems that warrant an explicit "pay attention here"
 /// marker on call sites.
 ///
+/// # Synchronization
+///
+/// All synchronization is handled via a [`Mutex`] around the
+/// underlying priority queue. This [`Mutex`] is locked for
+/// all forms of the [`schedule()`] method to enqueue new
+/// events, when popping an event to advance the simulation,
+/// and for checking the queue's length in the implementation
+/// of [`std::fmt::Display`]. None of these methods expose
+/// the resulting [`MutexGuard`], and so it is also unlocked
+/// before the simulation makes additional progress.
+///
+/// # Panics
+///
+/// All forms of [`schedule()`] and the implementation of
+/// [`std::fmt::Display`] are capable of panicking if the
+/// [`Mutex`] becomes poisoned. This poisoning is unlikely to
+/// occur, however, as it is always unlocked before
+/// returning control to client code.
+///
 /// [`ThreadSafeSimulation::run()`]: super::Simulation::run
 /// [`Error::BackInTime`]: crate::Error::BackInTime
+/// [`schedule()`]: EventQueue::schedule
+/// [`MutexGuard`]: std::sync::MutexGuard
 #[derive(Debug, Default)]
 pub struct EventQueue<State, Time>
 where
@@ -79,6 +100,10 @@ where
 {
     events: Mutex<BinaryHeap<Reverse<EventHolder<State, Time>>>>,
     last_execution_time: Time,
+    /// Using an atomic here allows for interior mutability, but
+    /// synchronization is actually controlled by the mutex on
+    /// the `events` field. This value will only mutate with that
+    /// mutex locked, and so can use entirely Relaxed ordering.
     events_added: atomic::AtomicUsize,
 }
 
@@ -108,7 +133,7 @@ where
     ///
     /// # Panics
     ///
-    /// If the mutex protecting the underlying priority queue implementation has
+    /// If the [`Mutex`] protecting the underlying priority queue implementation has
     /// been poisoned by another thread panicking while it is locked, this method
     /// will also panic.
     ///
@@ -144,7 +169,7 @@ where
     ///
     /// # Panics
     ///
-    /// If the mutex protecting the underlying priority queue implementation has
+    /// If the [`Mutex`] protecting the underlying priority queue implementation has
     /// been poisoned by another thread panicking while it is locked, this method
     /// will also panic.
     pub unsafe fn schedule_unchecked<EventType>(&self, event: EventType, time: Time)
@@ -165,7 +190,7 @@ where
     ///
     /// # Panics
     ///
-    /// If the mutex protecting the underlying priority queue implementation has
+    /// If the [`Mutex`] protecting the underlying priority queue implementation has
     /// been poisoned by another thread panicking while it is locked, this method
     /// will also panic.
     ///
@@ -198,25 +223,20 @@ where
     ///
     /// # Panics
     ///
-    /// If the mutex protecting the underlying priority queue implementation has
+    /// If the [`Mutex`] protecting the underlying priority queue implementation has
     /// been poisoned by another thread panicking while it is locked, this method
     /// will also panic.
     pub unsafe fn schedule_unchecked_from_boxed(&self, event: Box<dyn Event<State, Time>>, time: Time) {
-        self.events
+        let mut events_guard = self
+            .events
             .lock()
-            .expect("event queue mutex should not have been poisoned")
-            .push(Reverse(EventHolder {
-                execution_time: time,
-                event,
-                insertion_sequence: self.increment_event_count(),
-            }));
-    }
+            .expect("event queue mutex should not have been poisoned");
 
-    /// Helper function to make sure incrementing the
-    /// internal count of added events occurs the
-    /// same way across all scheduling methods.
-    fn increment_event_count(&self) -> usize {
-        self.events_added.fetch_add(1, atomic::Ordering::Relaxed)
+        events_guard.push(Reverse(EventHolder {
+            execution_time: time,
+            event,
+            insertion_sequence: self.events_added.fetch_add(1, atomic::Ordering::Relaxed),
+        }));
     }
 
     /// Crate-internal function to pop an event from the queue. Updates the
@@ -224,7 +244,7 @@ where
     ///
     /// # Panics
     ///
-    /// If the mutex protecting the underlying priority queue implementation has
+    /// If the [`Mutex`] protecting the underlying priority queue implementation has
     /// been poisoned by another thread panicking while it is locked, this method
     /// will also panic.
     pub(crate) fn next(&mut self) -> Option<Box<dyn Event<State, Time>>> {
