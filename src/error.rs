@@ -2,23 +2,27 @@
 /// a simulation.
 ///
 /// The [`BackInTime`] variant originates from the
-/// safe interface of the [`EventQueue`] to indicate
-/// that an event's scheduled execution time is
-/// prior to the queue's current time. This error
-/// likely corresponds to a logical bug on the
-/// client side, e.g. forgetting to add an offset to
-/// the current time when scheduling a new event.
+/// safe interface of the [`EventQueue`] or
+/// [`ThreadSafeEventQueue`] to indicate that an
+/// event's scheduled execution time is prior to the
+/// queue's current time. This error likely
+/// corresponds to a logical bug on the client side,
+/// e.g. forgetting to add an offset to the current
+/// time when scheduling a new event.
 ///
 /// The [`BadExecution`] variant originates from client
 /// code, providing a wrapper that can pass through
-/// [`Simulation::run()`]  in a type-safe manner.
-/// Invoking [`std::error::Error::source()`] on this
-/// variant will acquire a shared reference to the
-/// wrapped [`std::error::Error`] for handling on the
-/// client side.
+/// [`Simulation::run()`] or
+/// [`ThreadSafeSimulation::run()`] in a type-safe
+/// manner. Invoking [`std::error::Error::source()`]
+/// on this variant will acquire a shared reference to
+/// the wrapped [`std::error::Error`] for handling on
+/// the client side.
 ///
 /// [`EventQueue`]: crate::serial::EventQueue
+/// [`ThreadSafeEventQueue`]: crate::threadsafe::ThreadSafeEventQueue
 /// [`Simulation::run()`]: crate::serial::Simulation::run
+/// [`ThreadSafeSimulation::run()`]: crate::threadsafe::ThreadSafeSimulation::run
 /// [`BackInTime`]: Error::BackInTime
 /// [`BadExecution`]: Error::BadExecution
 #[derive(Debug)]
