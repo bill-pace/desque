@@ -24,8 +24,8 @@ use std::fmt::Formatter;
 /// accessible to multiple threads, all implementors should be
 /// [`Send`] and [`Sync`].
 ///
-/// [`Simulation::run()`]: crate::serial::Simulation::run
-/// [`is_complete()`]: crate::serial::SimState::is_complete
+/// [`Simulation::run()`]: Simulation::run
+/// [`is_complete()`]: SimState::is_complete
 pub trait SimState<Time>: Send + Sync
 where
     Time: SimTime,
@@ -44,8 +44,8 @@ where
     /// The `current_time` argument will provide shared access
     /// to the internally tracked simulation clock.
     ///
-    /// [`Simulation::run()`]: crate::serial::Simulation::run
-    /// [`run()`]: crate::serial::Simulation::run
+    /// [`Simulation::run()`]: Simulation::run
+    /// [`run()`]: Simulation::run
     // expect that other implementations will make use of the
     // argument even though this one doesn't
     #[allow(unused_variables)]
@@ -260,5 +260,87 @@ where
 {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "Simulation at time {:?}", self.event_queue.current_time())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::threadsafe::OkEvent;
+
+    #[derive(Debug)]
+    struct State {
+        executed_event_values: Vec<u32>,
+        complete: bool,
+    }
+    impl SimState<u32> for State {
+        fn is_complete(&self, _: &u32) -> bool {
+            self.complete
+        }
+    }
+
+    #[derive(Debug)]
+    struct TestEvent {
+        value: u32,
+    }
+
+    impl Event<State, u32> for TestEvent {
+        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, u32>) -> crate::Result {
+            simulation_state.executed_event_values.push(self.value);
+            Ok(())
+        }
+    }
+
+    #[derive(Debug)]
+    struct CompletionEvent {}
+
+    impl OkEvent<State, u32> for CompletionEvent {
+        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, u32>) {
+            simulation_state.complete = true;
+        }
+    }
+
+    fn setup() -> Simulation<State, u32> {
+        let sim = Simulation::new(
+            State {
+                executed_event_values: Vec::with_capacity(3),
+                complete: false,
+            },
+            0,
+        );
+
+        let events: [TestEvent; 3] = [TestEvent { value: 1 }, TestEvent { value: 3 }, TestEvent { value: 2 }];
+
+        for (i, event) in events.into_iter().enumerate() {
+            sim.event_queue.schedule(event, 2 * i as u32).unwrap();
+        }
+        sim
+    }
+
+    #[test]
+    fn simulation_executes_events() {
+        let mut sim = setup();
+        sim.run().unwrap();
+
+        let expected = vec![1, 3, 2];
+        assert_eq!(
+            expected, sim.state.executed_event_values,
+            "events did not execute in correct order"
+        );
+    }
+
+    #[test]
+    fn simulation_stops_with_events_still_in_queue() {
+        let mut sim = setup();
+        sim.event_queue
+            .schedule_from_boxed(Box::new(CompletionEvent {}), 3)
+            .unwrap();
+        sim.run().unwrap();
+
+        let expected = vec![1, 3];
+        assert_eq!(
+            expected, sim.state.executed_event_values,
+            "simulation did not terminate with completion event"
+        );
     }
 }
