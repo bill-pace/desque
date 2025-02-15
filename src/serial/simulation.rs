@@ -64,7 +64,7 @@ where
 /// The expected workflow for a Simulation is:
 ///
 /// 1. Initialize a struct that implements [`SimState`].
-/// 2. Pass this struct and the start time to `new()`.
+/// 2. Pass this struct and the start time to [`new()`].
 /// 3. Schedule at least one initial event.
 /// 4. Call [`run()`]. Handle any error it might return.
 /// 5. Use the [`state()`] or [`state_mut()`] accessors
@@ -74,6 +74,7 @@ where
 /// interface as its underlying queue for the purpose of
 /// making step 3 slightly simpler.
 ///
+/// [`new()`]: Simulation::new
 /// [`run()`]: Simulation::run
 /// [`state()`]: Simulation::state
 /// [`state_mut()`]: Simulation::state_mut
