@@ -106,6 +106,12 @@ where
     /// indicate the likely presence of a logical bug at
     /// the call site, with no modifications to the queue.
     ///
+    /// # Panics
+    ///
+    /// If the mutex protecting the underlying priority queue implementation has
+    /// been poisoned by another thread panicking while it is locked, this method
+    /// will also panic.
+    ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     pub fn schedule<EventType>(&self, event: EventType, time: Time) -> crate::Result
     where
@@ -135,6 +141,12 @@ where
     /// enforced at the call site through some other means. For example, adding a
     /// strictly positive offset to the current clock time to get the `time` argument
     /// for the call.
+    ///
+    /// # Panics
+    ///
+    /// If the mutex protecting the underlying priority queue implementation has
+    /// been poisoned by another thread panicking while it is locked, this method
+    /// will also panic.
     pub unsafe fn schedule_unchecked<EventType>(&self, event: EventType, time: Time)
     where
         EventType: ThreadSafeEvent<State, Time> + 'static,
@@ -150,6 +162,12 @@ where
     /// `self`, returns a [`Error::BackInTime`] to
     /// indicate the likely presence of a logical bug at
     /// the call site, with no modifications to the queue.
+    ///
+    /// # Panics
+    ///
+    /// If the mutex protecting the underlying priority queue implementation has
+    /// been poisoned by another thread panicking while it is locked, this method
+    /// will also panic.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     pub fn schedule_from_boxed(&self, event: Box<dyn ThreadSafeEvent<State, Time>>, time: Time) -> crate::Result {
@@ -177,6 +195,12 @@ where
     /// enforced at the call site through some other means. For example, adding a
     /// strictly positive offset to the current clock time to get the `time` argument
     /// for the call.
+    ///
+    /// # Panics
+    ///
+    /// If the mutex protecting the underlying priority queue implementation has
+    /// been poisoned by another thread panicking while it is locked, this method
+    /// will also panic.
     pub unsafe fn schedule_unchecked_from_boxed(&self, event: Box<dyn ThreadSafeEvent<State, Time>>, time: Time) {
         self.events
             .lock()
@@ -197,6 +221,12 @@ where
 
     /// Crate-internal function to pop an event from the queue. Updates the
     /// current clock time to match the execution time of the popped event.
+    ///
+    /// # Panics
+    ///
+    /// If the mutex protecting the underlying priority queue implementation has
+    /// been poisoned by another thread panicking while it is locked, this method
+    /// will also panic.
     pub(crate) fn next(&mut self) -> Option<Box<dyn ThreadSafeEvent<State, Time>>> {
         if let Some(event_holder) = self
             .events
