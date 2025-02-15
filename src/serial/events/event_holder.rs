@@ -1,4 +1,4 @@
-use crate::{Event, SimState, SimTime};
+use super::{Event, SimState, SimTime};
 use std::cmp::Ordering;
 
 /// Helper struct for the event queue. This struct

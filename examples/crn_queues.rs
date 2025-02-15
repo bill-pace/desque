@@ -28,7 +28,7 @@
 //! then ensures the same random numbers are used for the same purposes in
 //! each server configuration.
 
-use desque::*;
+use desque::serial::*;
 use rand::{Rng, SeedableRng};
 use rand_distr::{Distribution, Exp};
 use rand_pcg::Pcg64;

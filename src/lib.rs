@@ -34,10 +34,7 @@
 //! [`NotNan`]: https://docs.rs/ordered-float/4/ordered_float/struct.NotNan.html
 
 mod error;
-mod events;
-mod simulation;
+pub mod serial;
+pub mod threadsafe;
 
 pub use crate::error::{Error, Result};
-pub use crate::events::event_traits::{Event, OkEvent};
-pub use crate::events::{EventQueue, SimTime};
-pub use crate::simulation::{SimState, Simulation};

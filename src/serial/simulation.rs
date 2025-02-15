@@ -1,4 +1,4 @@
-use crate::{Event, EventQueue, SimTime};
+use super::{Event, EventQueue, SimTime};
 
 use std::fmt::{Debug, Formatter};
 
@@ -259,7 +259,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Event, OkEvent};
+    use crate::serial::OkEvent;
 
     #[derive(Debug)]
     struct State {

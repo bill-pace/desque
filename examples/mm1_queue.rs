@@ -17,7 +17,8 @@
 //! If nonzero, then the queue size is decremented and
 //! a new Service event scheduled for the next customer.
 
-use desque::*;
+use desque::serial::*;
+use desque::Result;
 use rand::SeedableRng;
 use rand_distr::{Distribution, Exp};
 use rand_pcg::Pcg64;

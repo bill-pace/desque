@@ -1,6 +1,6 @@
 mod util;
 
-use desque::*;
+use desque::serial::*;
 use rand::{Rng, SeedableRng};
 use rand_distr::{Distribution, Exp};
 use rand_pcg::Pcg64;

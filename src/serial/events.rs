@@ -1,7 +1,7 @@
 mod event_holder;
 pub(crate) mod event_traits;
 
-use crate::SimState;
+use super::SimState;
 use event_holder::EventHolder;
 use event_traits::Event;
 
