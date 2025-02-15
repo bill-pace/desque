@@ -134,8 +134,8 @@ where
     ///    handle the underlying error, either unpack the [`BadExecution`]
     ///    or call its [`source()`] method.
     ///
-    /// [`state.is_complete()`]: crate::serial::SimState::is_complete
-    /// [`event.execute()`]: Event::execute
+    /// [`state.is_complete()`]: ThreadSafeSimState::is_complete
+    /// [`event.execute()`]: ThreadSafeEvent::execute
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     /// [`Error::BadExecution`]: crate::Error::BadExecution
     /// [`BadExecution`]: crate::Error::BadExecution

@@ -17,8 +17,8 @@
 /// wrapped [`std::error::Error`] for handling on the
 /// client side.
 ///
-/// [`EventQueue`]: crate::EventQueue
-/// [`Simulation::run()`]: crate::Simulation::run
+/// [`EventQueue`]: crate::serial::EventQueue
+/// [`Simulation::run()`]: crate::serial::Simulation::run
 /// [`BackInTime`]: Error::BackInTime
 /// [`BadExecution`]: Error::BadExecution
 #[derive(Debug)]

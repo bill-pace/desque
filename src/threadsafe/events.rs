@@ -35,19 +35,19 @@ impl<T> ThreadSafeSimTime for T where T: serial::SimTime + Send + Sync {}
 /// Events will execute in ascending order of execution time,
 /// with ties broken by the order in which they were pushed
 /// onto the queue. This tiebreaker is in addition to any
-/// built-in to the implementation of [`SimTime`] used for
-/// the clock as a way to stabilize the observed order of
-/// execution.
+/// built-in to the implementation of [`ThreadSafeSimTime`]
+/// used for the clock as a way to stabilize the observed
+/// order of execution.
 ///
 /// This struct is generic over the type used to represent
 /// clock time for the sake of tracking the current time,
 /// as well over the type used to represent simulation state
 /// so that it can work with appropriate event types.
 ///
-/// An [`serial::EventQueue`] provides several different methods for
-/// scheduling new events, but does not publicly support
-/// popping; popping events from the queue only occurs during
-/// [`Simulation::run()`].
+/// A [`ThreadSafeEventQueue`] provides several different
+/// methods for scheduling new events, but does not publicly
+/// support popping; popping events from the queue only occurs
+/// during [`ThreadSafeSimulation::run()`].
 ///
 /// # Safety
 ///
@@ -69,7 +69,7 @@ impl<T> ThreadSafeSimTime for T where T: serial::SimTime + Send + Sync {}
 /// problems that warrant an explicit "pay attention here"
 /// marker on call sites.
 ///
-/// [`Simulation::run()`]: crate::Simulation::run
+/// [`ThreadSafeSimulation::run()`]: super::ThreadSafeSimulation::run
 /// [`Error::BackInTime`]: crate::Error::BackInTime
 #[derive(Debug, Default)]
 pub struct ThreadSafeEventQueue<State, Time>

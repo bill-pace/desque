@@ -45,7 +45,7 @@ where
     ///
     /// See [`Error`] for more details on the variants of this error enum.
     ///
-    /// [`Simulation::run()`]: crate::Simulation::run
+    /// [`Simulation::run()`]: crate::serial::Simulation::run
     /// [`execute()`]: Event::execute
     /// [`dyn std::error::Error`]: std::error::Error
     /// [`Error`]: crate::Error
@@ -79,7 +79,7 @@ where
     /// Note that the simulation's clock time, accessible on the `event_queue` parameter, will update before
     /// invoking this method.
     ///
-    /// [`Simulation::run()`]: crate::Simulation::run
+    /// [`Simulation::run()`]: crate::serial::Simulation::run
     fn execute(&mut self, simulation_state: &mut State, event_queue: &mut EventQueue<State, Time>);
 }
 

@@ -101,7 +101,7 @@ impl<Float> SimTime for ordered_float::NotNan<Float> where Float: ordered_float:
 /// problems that warrant an explicit "pay attention here"
 /// marker on call sites.
 ///
-/// [`Simulation::run()`]: crate::Simulation::run
+/// [`Simulation::run()`]: crate::serial::Simulation::run
 /// [`Error::BackInTime`]: crate::Error::BackInTime
 #[derive(Debug, Default)]
 pub struct EventQueue<State, Time>
