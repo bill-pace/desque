@@ -1,0 +1,256 @@
+use super::{ThreadSafeEvent, ThreadSafeEventQueue, ThreadSafeSimTime};
+use std::fmt::Formatter;
+
+/// The generic type used for a simulation's overall state.
+///
+/// This type may include to-date summary statistics, collections
+/// of simulated entities, terrain maps, historical records of
+/// simulated events, or whatever else is necessary to describe
+/// the real-world process or phenomenon in a program.
+///
+/// This trait has only one method, which provides a way for the
+/// [`Simulation::run()`] method to ask whether it should wrap
+/// up event execution. The default implementation of this
+/// method will always answer "no," and so a simulation running
+/// with that implementation will continue until the event queue
+/// becomes empty.
+///
+/// Making this trait generic over the type used for clock time
+/// enables the [`is_complete()`] method to take a shared
+/// reference to that type with full access to any method with
+/// a `&self` receiver.
+///
+/// [`Simulation::run()`]: crate::serial::Simulation::run
+/// [`is_complete()`]: crate::serial::SimState::is_complete
+pub trait ThreadSafeSimState<Time>: Send + Sync
+where
+    Time: ThreadSafeSimTime,
+{
+    /// Reports whether the simulation has run to completion.
+    /// This method will be invoked in [`Simulation::run()`]
+    /// before popping each event off the queue: `true` indicates
+    /// that the simulation is finished and that [`run()`] should
+    /// break out of its loop, whereas `false` means that [`run()`]
+    /// should continue with the next scheduled event.
+    ///
+    /// The default implementation always returns false, which
+    /// results in the simulation continuing until the event
+    /// queue empties out.
+    ///
+    /// The `current_time` argument will provide shared access
+    /// to the internally tracked simulation clock.
+    ///
+    /// [`Simulation::run()`]: crate::serial::Simulation::run
+    /// [`run()`]: crate::serial::Simulation::run
+    // expect that other implementations will make use of the
+    // argument even though this one doesn't
+    #[allow(unused_variables)]
+    fn is_complete(&self, current_time: &Time) -> bool {
+        false
+    }
+}
+
+/// Contains the event queue and other state belonging to
+/// a simulation.
+///
+/// The defining struct for a discrete-event simulation in
+/// desque. A [`crate::serial::Simulation`] owns both its state and its
+/// event queue, providing both shared and mutable access
+/// to each so clients can set up and tear down instances
+/// as needed - for example, scheduling initial events or
+/// writing the final state to output.
+///
+/// The expected workflow for a Simulation is:
+///
+/// 1. Initialize a struct that implements [`crate::serial::SimState`].
+/// 2. Pass this struct and the start time to `new()`.
+/// 3. Schedule at least one initial event.
+/// 4. Call [`run()`]. Handle any error it might return.
+/// 5. Use the [`state()`] or [`state_mut()`] accessors
+///    to finish processing the results.
+///
+/// A [`crate::serial::Simulation`] also provides the same event-scheduling
+/// interface as its underlying queue for the purpose of
+/// making step 3 slightly simpler.
+///
+/// [`run()`]: crate::serial::Simulation::run
+/// [`state()`]: crate::serial::Simulation::state
+/// [`state_mut()`]: crate::serial::Simulation::state_mut
+#[derive(Debug, Default)]
+pub struct ThreadSafeSimulation<State, Time>
+where
+    State: ThreadSafeSimState<Time>,
+    Time: ThreadSafeSimTime,
+{
+    /// A priority queue of events that have been scheduled
+    /// to execute, ordered ascending by execution time.
+    event_queue: ThreadSafeEventQueue<State, Time>,
+    /// The current shared state of the Simulation. Exclusive
+    /// access will be granted to each event that executes.
+    state: State,
+}
+
+impl<State, Time> ThreadSafeSimulation<State, Time>
+where
+    State: ThreadSafeSimState<Time>,
+    Time: ThreadSafeSimTime,
+{
+    /// Initialize a Simulation instance with the provided
+    /// starting state and an event queue with clock set
+    /// to the provided starting time.
+    pub fn new(initial_state: State, start_time: Time) -> Self {
+        Self {
+            event_queue: ThreadSafeEventQueue::new(start_time),
+            state: initial_state,
+        }
+    }
+
+    /// Execute events from the priority queue, one at a time,
+    /// in ascending order by execution time.
+    ///
+    /// Follows this loop:
+    ///
+    /// 1. Does [`state.is_complete()`] return true? If so, return `Ok(())`.
+    /// 2. Attempt to pop the next event from the queue. If there isn't
+    ///    one, return `Ok(())`.
+    /// 3. Pass exclusive references to the state and event queue to
+    ///    [`event.execute()`].
+    ///     1. If an error is returned, forward it as-is to the caller.
+    ///     2. Otherwise, go back to step 1.
+    ///
+    /// # Errors
+    ///
+    /// Errors may occur during execution of events, and if encountered
+    /// here they will be passed back to the caller, unchanged. The two
+    /// variants directly supported are:
+    ///
+    /// 1. [`Error::BackInTime`] means that client code attempted to
+    ///    schedule an event at some point in the simulation's past.
+    ///    This error is a likely indicator that client code contains
+    ///    a logical bug, as most discrete-event simulations would
+    ///    never rewind their clocks.
+    /// 2. [`Error::BadExecution`] wraps a client-generated error in a
+    ///    way that is type-safe to feed back through this method. To
+    ///    handle the underlying error, either unpack the [`BadExecution`]
+    ///    or call its [`source()`] method.
+    ///
+    /// [`state.is_complete()`]: crate::serial::SimState::is_complete
+    /// [`event.execute()`]: Event::execute
+    /// [`Error::BackInTime`]: crate::Error::BackInTime
+    /// [`Error::BadExecution`]: crate::Error::BadExecution
+    /// [`BadExecution`]: crate::Error::BadExecution
+    /// [`source()`]: crate::Error#method.source
+    // the detected panic in here is a false alarm as the call to unwrap
+    // is immediately preceded by a check that the Option is Some
+    #[allow(clippy::missing_panics_doc)]
+    pub fn run(&mut self) -> crate::Result {
+        loop {
+            if self.state.is_complete(self.event_queue.current_time()) {
+                return Ok(());
+            }
+
+            let next_event = self.event_queue.next();
+            if next_event.is_none() {
+                return Ok(());
+            }
+
+            let mut next_event = next_event.expect("next_event should not be None");
+            next_event.execute(&mut self.state, &mut self.event_queue)?;
+        }
+    }
+
+    /// Schedule the provided event at the specified time.
+    ///
+    /// # Errors
+    ///
+    /// If `time` is less than the current clock time on
+    /// `self`, returns a
+    /// [`Error::BackInTime`] to indicate the likely presence
+    /// of a logical bug at the call site, with no modifications
+    /// to the queue.
+    ///
+    /// [`Error::BackInTime`]: crate::Error::BackInTime
+    pub fn schedule<EventType>(&mut self, event: EventType, time: Time) -> crate::Result
+    where
+        EventType: ThreadSafeEvent<State, Time> + 'static,
+    {
+        self.event_queue.schedule(event, time)
+    }
+
+    /// Schedule the provided event at the specified time. Assumes that the provided
+    /// time is valid in the context of the client's simulation.
+    ///
+    /// # Safety
+    ///
+    /// While this method cannot trigger undefined behaviors, scheduling an event
+    /// for a time in the past is likely to be a logical bug in client code. Generally,
+    /// this method should only be invoked if the condition `time >= clock` is already
+    /// enforced at the call site through some other means. For example, adding a
+    /// strictly positive offset to the current clock time to get the `time` argument
+    /// for the call.
+    pub unsafe fn schedule_unchecked<EventType>(&mut self, event: EventType, time: Time)
+    where
+        EventType: ThreadSafeEvent<State, Time> + 'static,
+    {
+        self.event_queue.schedule_unchecked(event, time);
+    }
+
+    /// Schedule the provided event at the specified time.
+    ///
+    /// # Errors
+    ///
+    /// If `time` is less than the current clock time on
+    /// `self`, returns a [`Error::BackInTime`] to indicate the
+    /// likely presence of a logical bug at the call site, with
+    /// no modifications to the queue.
+    ///
+    /// [`Error::BackInTime`]: crate::Error::BackInTime
+    pub fn schedule_from_boxed(&mut self, event: Box<dyn ThreadSafeEvent<State, Time>>, time: Time) -> crate::Result {
+        self.event_queue.schedule_from_boxed(event, time)
+    }
+
+    /// Schedule the provided event at the specified time. Assumes that the provided
+    /// time is valid in the context of the client's simulation.
+    ///
+    /// # Safety
+    ///
+    /// While this method cannot trigger undefined behaviors, scheduling an event
+    /// for a time in the past is likely to be a logical bug in client code. Generally,
+    /// this method should only be invoked if the condition `time >= clock` is already
+    /// enforced at the call site through some other means. For example, adding a
+    /// strictly positive offset to the current clock time to get the `time` argument
+    /// for the call.
+    pub unsafe fn schedule_unchecked_from_boxed(&mut self, event: Box<dyn ThreadSafeEvent<State, Time>>, time: Time) {
+        self.event_queue.schedule_unchecked_from_boxed(event, time);
+    }
+
+    /// Get a shared reference to the simulation state.
+    pub fn state(&self) -> &State {
+        &self.state
+    }
+
+    /// Get an exclusive reference to the simulation state.
+    pub fn state_mut(&mut self) -> &mut State {
+        &mut self.state
+    }
+
+    /// Get a shared reference to the event queue.
+    pub fn event_queue(&self) -> &ThreadSafeEventQueue<State, Time> {
+        &self.event_queue
+    }
+
+    /// Get an exclusive reference to the event queue.
+    pub fn event_queue_mut(&mut self) -> &mut ThreadSafeEventQueue<State, Time> {
+        &mut self.event_queue
+    }
+}
+
+impl<State, Time> std::fmt::Display for ThreadSafeSimulation<State, Time>
+where
+    State: ThreadSafeSimState<Time>,
+    Time: ThreadSafeSimTime,
+{
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "Simulation at time {:?}", self.event_queue.current_time())
+    }
+}

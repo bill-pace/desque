@@ -1,66 +1,34 @@
 mod event_holder;
 pub(super) mod event_traits;
 
-use super::SimState;
+use super::ThreadSafeSimState;
+use crate::serial;
 use event_holder::EventHolder;
-use event_traits::Event;
-
+use event_traits::ThreadSafeEvent;
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 use std::fmt::Debug;
+use std::sync::atomic;
+use std::sync::Mutex;
 
 /// The generic type used for a simulation's clock.
 ///
 /// Kept generic to support as many variations of clock as
-/// possible. This trait is a superset of [`Ord`] and [`Debug`]
-/// with no additional requirements or functionality.
+/// possible. This trait is a superset of [`serial::SimTime`],
+/// [`Send`], and [`Sync`] and is automatically implemented
+/// for all types that implement those traits.
 ///
-/// Your implementation of this trait should use the [`Ord`]
-/// trait to account for not only the overall sequencing of
-/// events, but also any tie breaking that may be necessary
-/// in your use case. Note that events will be executed in
-/// ascending order of execution time, i.e. if `A.cmp(&B) ==
-/// std::cmp::Ordering::Less` then event A will execute
-/// before event B.
-///
-/// [`Debug`] is necessary for the implementation of Debug
-/// on [`EventQueue`].
-///
-/// Implementations are provided for integral builtin types,
-/// but not for floating-point builtin types as the latter do
-/// not implement [`Ord`]. If you wish to use either [`f32`] or
-/// [`f64`] as your [`SimTime`], either enable the
-/// `ordered-float` feature (and so add a dependency on the
-/// [`ordered-float`] crate) to gain access to an implementation
-/// on the [`OrderedFloat`] and [`NotNan`] structs, or create
-/// your own wrapper that guarantees full ordering. If you
-/// intend to use [`OrderedFloat`] or [`NotNan`] with your own
-/// custom types, ensure you also implement [`Debug`] to
-/// satisfy the additional requirement on `SimTime`.
+/// Enabling the `ordered-float` feature on desque includes
+/// the [`OrderedFloat`] and [`NotNan`] types from the
+/// [`ordered-float`] crate in the provided implementations,
+/// just like with [`serial::SimTime`].
 ///
 /// [`ordered-float`]: https://docs.rs/ordered-float/4
 /// [`OrderedFloat`]: https://docs.rs/ordered-float/4/ordered_float/struct.OrderedFloat.html
 /// [`NotNan`]: https://docs.rs/ordered-float/4/ordered_float/struct.NotNan.html
-pub trait SimTime: Ord + Debug {}
+pub trait ThreadSafeSimTime: serial::SimTime + Send + Sync {}
 
-impl SimTime for u8 {}
-impl SimTime for u16 {}
-impl SimTime for u32 {}
-impl SimTime for u64 {}
-impl SimTime for u128 {}
-impl SimTime for usize {}
-impl SimTime for i8 {}
-impl SimTime for i16 {}
-impl SimTime for i32 {}
-impl SimTime for i64 {}
-impl SimTime for i128 {}
-impl SimTime for isize {}
-
-#[cfg(feature = "ordered-float")]
-impl<Float> SimTime for ordered_float::OrderedFloat<Float> where Float: ordered_float::FloatCore + Debug {}
-
-#[cfg(feature = "ordered-float")]
-impl<Float> SimTime for ordered_float::NotNan<Float> where Float: ordered_float::FloatCore + Debug {}
+impl<T> ThreadSafeSimTime for T where T: serial::SimTime + Send + Sync {}
 
 /// Priority queue of scheduled events.
 ///
@@ -76,7 +44,7 @@ impl<Float> SimTime for ordered_float::NotNan<Float> where Float: ordered_float:
 /// as well over the type used to represent simulation state
 /// so that it can work with appropriate event types.
 ///
-/// An [`EventQueue`] provides several different methods for
+/// An [`serial::EventQueue`] provides several different methods for
 /// scheduling new events, but does not publicly support
 /// popping; popping events from the queue only occurs during
 /// [`Simulation::run()`].
@@ -104,28 +72,28 @@ impl<Float> SimTime for ordered_float::NotNan<Float> where Float: ordered_float:
 /// [`Simulation::run()`]: crate::Simulation::run
 /// [`Error::BackInTime`]: crate::Error::BackInTime
 #[derive(Debug, Default)]
-pub struct EventQueue<State, Time>
+pub struct ThreadSafeEventQueue<State, Time>
 where
-    State: SimState<Time>,
-    Time: SimTime,
+    State: ThreadSafeSimState<Time>,
+    Time: ThreadSafeSimTime,
 {
-    events: BinaryHeap<Reverse<EventHolder<State, Time>>>,
+    events: Mutex<BinaryHeap<Reverse<EventHolder<State, Time>>>>,
     last_execution_time: Time,
-    events_added: usize,
+    events_added: atomic::AtomicUsize,
 }
 
-impl<State, Time> EventQueue<State, Time>
+impl<State, Time> ThreadSafeEventQueue<State, Time>
 where
-    State: SimState<Time>,
-    Time: SimTime,
+    State: ThreadSafeSimState<Time>,
+    Time: ThreadSafeSimTime,
 {
     /// Construct a new [`EventQueue`] with no scheduled events
     /// and a clock initialized to the provided time.
     pub(crate) fn new(start_time: Time) -> Self {
         Self {
-            events: BinaryHeap::default(),
+            events: Mutex::default(),
             last_execution_time: start_time,
-            events_added: 0,
+            events_added: atomic::AtomicUsize::new(0),
         }
     }
 
@@ -139,9 +107,9 @@ where
     /// the call site, with no modifications to the queue.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
-    pub fn schedule<EventType>(&mut self, event: EventType, time: Time) -> crate::Result
+    pub fn schedule<EventType>(&self, event: EventType, time: Time) -> crate::Result
     where
-        EventType: Event<State, Time> + 'static,
+        EventType: ThreadSafeEvent<State, Time> + 'static,
     {
         if time < self.last_execution_time {
             return Err(crate::Error::BackInTime);
@@ -167,9 +135,9 @@ where
     /// enforced at the call site through some other means. For example, adding a
     /// strictly positive offset to the current clock time to get the `time` argument
     /// for the call.
-    pub unsafe fn schedule_unchecked<EventType>(&mut self, event: EventType, time: Time)
+    pub unsafe fn schedule_unchecked<EventType>(&self, event: EventType, time: Time)
     where
-        EventType: Event<State, Time> + 'static,
+        EventType: ThreadSafeEvent<State, Time> + 'static,
     {
         self.schedule_unchecked_from_boxed(Box::new(event), time);
     }
@@ -184,7 +152,7 @@ where
     /// the call site, with no modifications to the queue.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
-    pub fn schedule_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) -> crate::Result {
+    pub fn schedule_from_boxed(&self, event: Box<dyn ThreadSafeEvent<State, Time>>, time: Time) -> crate::Result {
         if time < self.last_execution_time {
             return Err(crate::Error::BackInTime);
         }
@@ -209,28 +177,33 @@ where
     /// enforced at the call site through some other means. For example, adding a
     /// strictly positive offset to the current clock time to get the `time` argument
     /// for the call.
-    pub unsafe fn schedule_unchecked_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) {
-        let count = self.increment_event_count();
-        self.events.push(Reverse(EventHolder {
-            execution_time: time,
-            event,
-            insertion_sequence: count,
-        }));
+    pub unsafe fn schedule_unchecked_from_boxed(&self, event: Box<dyn ThreadSafeEvent<State, Time>>, time: Time) {
+        self.events
+            .lock()
+            .expect("event queue mutex should not have been poisoned")
+            .push(Reverse(EventHolder {
+                execution_time: time,
+                event,
+                insertion_sequence: self.increment_event_count(),
+            }));
     }
 
     /// Helper function to make sure incrementing the
     /// internal count of added events occurs the
     /// same way across all scheduling methods.
-    fn increment_event_count(&mut self) -> usize {
-        let count = self.events_added;
-        self.events_added += 1;
-        count
+    fn increment_event_count(&self) -> usize {
+        self.events_added.fetch_add(1, atomic::Ordering::Relaxed)
     }
 
     /// Crate-internal function to pop an event from the queue. Updates the
     /// current clock time to match the execution time of the popped event.
-    pub(crate) fn next(&mut self) -> Option<Box<dyn Event<State, Time>>> {
-        if let Some(event_holder) = self.events.pop() {
+    pub(crate) fn next(&mut self) -> Option<Box<dyn ThreadSafeEvent<State, Time>>> {
+        if let Some(event_holder) = self
+            .events
+            .lock()
+            .expect("event queue mutex should not have been poisoned")
+            .pop()
+        {
             self.last_execution_time = event_holder.0.execution_time;
             Some(event_holder.0.event)
         } else {
@@ -244,109 +217,20 @@ where
     }
 }
 
-impl<State, Time> std::fmt::Display for EventQueue<State, Time>
+impl<State, Time> std::fmt::Display for ThreadSafeEventQueue<State, Time>
 where
-    State: SimState<Time>,
-    Time: SimTime,
+    State: ThreadSafeSimState<Time>,
+    Time: ThreadSafeSimTime,
 {
     fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
             formatter,
             "EventQueue with {} scheduled events at current time {:?}",
-            self.events.len(),
+            self.events
+                .lock()
+                .expect("event queue mutex should not have been poisoned")
+                .len(),
             self.last_execution_time
-        )
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[derive(Debug)]
-    struct State {
-        executed_event_values: Vec<i32>,
-    }
-    impl SimState<i32> for State {}
-
-    #[derive(Debug)]
-    struct TestEvent {
-        value: i32,
-    }
-
-    impl Event<State, i32> for TestEvent {
-        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, i32>) -> crate::Result {
-            simulation_state.executed_event_values.push(self.value);
-            Ok(())
-        }
-    }
-
-    #[test]
-    fn execution_time_ascends() {
-        let mut state = State {
-            executed_event_values: Vec::with_capacity(3),
-        };
-        let mut queue = EventQueue::new(0);
-        queue.schedule(TestEvent { value: 1 }, 1).unwrap();
-        queue.schedule(TestEvent { value: 2 }, 3).unwrap();
-        queue.schedule(TestEvent { value: 3 }, 2).unwrap();
-        let expected = vec![1, 3, 2];
-
-        while let Some(mut event) = queue.next() {
-            event.execute(&mut state, &mut queue).unwrap();
-        }
-
-        assert_eq!(
-            expected, state.executed_event_values,
-            "events did not execute in expected order"
-        );
-    }
-
-    #[test]
-    fn schedule_fails_if_given_invalid_execution_time() {
-        let mut queue = EventQueue::new(0);
-        let result = queue.schedule(TestEvent { value: 0 }, -1);
-        assert!(result.is_err(), "queue failed to reject event scheduled for the past");
-        assert_eq!(
-            crate::Error::BackInTime,
-            result.err().unwrap(),
-            "queue returned unexpected error type"
-        );
-    }
-
-    #[test]
-    fn unsafe_schedulers_allow_time_to_reverse() {
-        let mut queue = EventQueue::new(0);
-        unsafe {
-            queue.schedule_unchecked(TestEvent { value: 1 }, -1);
-        }
-        queue.next().unwrap();
-        assert_eq!(
-            -1,
-            *queue.current_time(),
-            "current time did not update when popping event scheduled in the past"
-        );
-    }
-
-    #[test]
-    fn insertion_sequence_breaks_ties_in_execution_time() {
-        const NUM_EVENTS: i32 = 10;
-        let mut state = State {
-            executed_event_values: Vec::with_capacity(NUM_EVENTS as usize),
-        };
-        let mut queue = EventQueue::new(0);
-
-        for copy_id in 0..NUM_EVENTS {
-            queue.schedule(TestEvent { value: copy_id }, 1).unwrap();
-        }
-        while let Some(mut event) = queue.next() {
-            event.execute(&mut state, &mut queue).unwrap();
-        }
-
-        let expected: Vec<_> = (0..NUM_EVENTS).collect();
-        assert_eq!(
-            expected, state.executed_event_values,
-            "events executed out of insertion sequence"
         )
     }
 }
