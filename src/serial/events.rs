@@ -248,7 +248,7 @@ where
 impl<State, Time> EventQueue<State, Time>
 where
     State: SimState<Time>,
-    Time: SimTime + Copy + Add<Output = Time>,
+    Time: SimTime + Clone + Add<Output = Time>,
 {
     /// Schedule the provided event after the specified delay. The event's execution
     /// time will be equal to the result of `self.current_time() + delay`.
@@ -264,7 +264,7 @@ where
     where
         EventType: Event<State, Time> + 'static,
     {
-        let event_time = self.last_execution_time + delay;
+        let event_time = self.last_execution_time.clone() + delay;
         self.schedule(event, event_time)
     }
 
@@ -279,7 +279,7 @@ where
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     pub fn schedule_with_delay_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, delay: Time) -> crate::Result {
-        let event_time = self.last_execution_time + delay;
+        let event_time = self.last_execution_time.clone() + delay;
         self.schedule_from_boxed(event, event_time)
     }
 }
