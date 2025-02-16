@@ -21,6 +21,11 @@ analysis using the variance reduction technique known as common random numbers. 
 example also takes advantage of multithreading to run each server configuration up for
 comparison simultaneously.
 
+The [parallel event](https://github.com/bill-pace/desque/blob/main/examples/parallel_event.rs)
+example also demonstrates parallelization. This example has a main event type which
+is able to schedule follow-on events from each thread it spawns using the features
+in desque's `threadsafe` module.
+
 [Detailed documentation](https://docs.rs/desque) explains the interface for all exported
 types and the requirements for template parameters in client code.
 
