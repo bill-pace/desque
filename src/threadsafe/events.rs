@@ -8,6 +8,7 @@ use event_traits::Event;
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 use std::fmt::Debug;
+use std::ops::Add;
 use std::sync::atomic;
 use std::sync::Mutex;
 
@@ -264,6 +265,57 @@ where
     /// Get a shared reference to the simulation's current clock time.
     pub fn current_time(&self) -> &Time {
         &self.last_execution_time
+    }
+}
+
+impl<State, Time> EventQueue<State, Time>
+where
+    State: SimState<Time>,
+    Time: SimTime + Copy + Add<Output = Time>,
+{
+    /// Schedule the provided event after the specified delay. The event's execution
+    /// time will be equal to the result of `self.current_time() + delay`.
+    ///
+    /// # Errors
+    ///
+    /// If the calculated execution time is less than the current clock time on
+    /// `self`, returns a [`Error::BackInTime`] to indicate the likely presence of
+    /// a logical bug at the call site, with no modifications to the queue.
+    ///
+    /// # Panics
+    ///
+    /// If the [`Mutex`] protecting the underlying priority queue implementation has
+    /// been poisoned by another thread panicking while it is locked, this method
+    /// will also panic.
+    ///
+    /// [`Error::BackInTime`]: crate::Error::BackInTime
+    pub fn schedule_with_delay<EventType>(&mut self, event: EventType, delay: Time) -> crate::Result
+    where
+        EventType: Event<State, Time> + 'static,
+    {
+        let event_time = self.last_execution_time + delay;
+        self.schedule(event, event_time)
+    }
+
+    /// Schedule the provided event after the specified delay. The event's execution
+    /// time will be equal to the result of `self.current_time() + delay`.
+    ///
+    /// # Errors
+    ///
+    /// If the calculated execution time is less than the current clock time on
+    /// `self`, returns a [`Error::BackInTime`] to indicate the likely presence of
+    /// a logical bug at the call site, with no modifications to the queue.
+    ///
+    /// # Panics
+    ///
+    /// If the [`Mutex`] protecting the underlying priority queue implementation has
+    /// been poisoned by another thread panicking while it is locked, this method
+    /// will also panic.
+    ///
+    /// [`Error::BackInTime`]: crate::Error::BackInTime
+    pub fn schedule_with_delay_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, delay: Time) -> crate::Result {
+        let event_time = self.last_execution_time + delay;
+        self.schedule_from_boxed(event, event_time)
     }
 }
 

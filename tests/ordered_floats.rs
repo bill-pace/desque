@@ -61,10 +61,9 @@ mod ordered_float_tests {
 
     impl ArrivalEvent {
         fn schedule(sim_state: &mut Store, events: &mut EventQueue<Store, NotNan<f64>>) {
-            let arrival_delay = sim_state.gen_arrival_delay();
-            let arrival_time = events.current_time() + arrival_delay;
+            let arrival_delay = NotNan::new(sim_state.gen_arrival_delay()).expect("delay should not be NaN");
             events
-                .schedule(Self {}, arrival_time)
+                .schedule_with_delay(Self {}, arrival_delay)
                 .expect("arrival delay should always be a positive number");
         }
 
