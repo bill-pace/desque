@@ -11,6 +11,9 @@ authors = ["Bill Pace"]
 keywords = ["discrete-event", "simulation", "des"]
 categories = ["simulation"]
 
+[package.metadata.docs.rs]
+all-features = true
+
 [dependencies]
 ordered-float = { version = "4", optional = true }
 
