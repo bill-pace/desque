@@ -289,7 +289,7 @@ where
     /// will also panic.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
-    pub fn schedule_with_delay<EventType>(&mut self, event: EventType, delay: Time) -> crate::Result
+    pub fn schedule_with_delay<EventType>(&self, event: EventType, delay: Time) -> crate::Result
     where
         EventType: Event<State, Time> + 'static,
     {
@@ -313,7 +313,7 @@ where
     /// will also panic.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
-    pub fn schedule_with_delay_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, delay: Time) -> crate::Result {
+    pub fn schedule_with_delay_from_boxed(&self, event: Box<dyn Event<State, Time>>, delay: Time) -> crate::Result {
         let event_time = self.last_execution_time.clone() + delay;
         self.schedule_from_boxed(event, event_time)
     }
