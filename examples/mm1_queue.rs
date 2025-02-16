@@ -1,21 +1,15 @@
-//! An M/M/1 queue that prints arrival and service event logs
-//! to stdout. Arrival times are distributed with a mean
-//! spacing of thirty minutes, and services times with a mean
-//! spacing of twenty minutes.
+//! An M/M/1 queue that prints arrival and service event logs to stdout. Arrival times are distributed with a mean
+//! spacing of thirty minutes, and services times with a mean spacing of twenty minutes.
 //!
-//! The simulation runs for nine hours before terminating,
-//! and so could represent a small, service-oriented
-//! business's typical workday.
+//! The simulation runs for nine hours before terminating, and so could represent a small, service-oriented business's
+//! typical workday.
 //!
-//! Arrival events check whether the server is currently
-//! busy. If so, the arriving customer gets in line. If
-//! not, the arriving customer goes directly to the server
-//! and a Service event is scheduled. Either way, a new
-//! Arrival event is also scheduled.
+//! Arrival events check whether the server is currently busy. If so, the arriving customer gets in line. If not, the
+//! arriving customer goes directly to the server and a Service event is scheduled. Either way, a new Arrival event is
+//! also scheduled.
 //!
-//! Service events check the current size of the queue.
-//! If nonzero, then the queue size is decremented and
-//! a new Service event scheduled for the next customer.
+//! Service events check the current size of the queue. If nonzero, then the queue size is decremented and a new Service
+//! event scheduled for the next customer.
 
 use desque::serial::*;
 use desque::Result;
@@ -25,8 +19,7 @@ use rand_pcg::Pcg64;
 use std::cmp::Ordering;
 use std::ops::Add;
 
-/// Wrap f64 with a new type so we can implement
-/// the Ord trait.
+/// Wrap f64 with a new type so we can implement the Ord trait.
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
 struct Time(f64);
 
@@ -48,11 +41,8 @@ impl Add<f64> for Time {
     }
 }
 
-/// Tracks the current length of the queue, whether
-/// the server is busy or idle, the desired end time
-/// of the simulation, and the random number
-/// generator from which arrival and service times
-/// are drawn.
+/// Tracks the current length of the queue, whether the server is busy or idle, the desired end time of the simulation,
+/// and the random number generator from which arrival and service times are drawn.
 struct Store {
     queue_length: usize,
     server_busy: bool,
@@ -61,9 +51,7 @@ struct Store {
 }
 
 impl Store {
-    /// Creates an empty store with idle server,
-    /// logs the desired end time, and seeds
-    /// a random-number generator.
+    /// Creates an empty store with idle server, logs the desired end time, and seeds a random-number generator.
     fn new(end_time: f64) -> Self {
         Self {
             queue_length: 0,
@@ -75,21 +63,19 @@ impl Store {
 }
 
 impl SimState<Time> for Store {
-    /// Checks whether the current simulation time is
-    /// at least the intended end time.
+    /// Checks whether the current simulation time is at least the intended end time.
     fn is_complete(&self, current_time: &Time) -> bool {
         current_time.0 >= self.end_time
     }
 }
 
-/// Handles the arrival of a customer to the store's
-/// checkout queue.
+/// Handles the arrival of a customer to the store's checkout queue.
 #[derive(Debug)]
 struct ArrivalEvent {}
 
 impl ArrivalEvent {
-    /// Draw an exponential random number with mean 30.0 to produce the next
-    /// arrival time and place a new ArrivalEvent on the queue for that time.
+    /// Draw an exponential random number with mean 30.0 to produce the next arrival time and place a new ArrivalEvent
+    /// on the queue for that time.
     fn schedule(simulation_state: &mut Store, event_queue: &mut EventQueue<Store, Time>) -> Result {
         let distribution = Exp::new(1.0 / 30.0).unwrap();
         let next_arrival_delay = distribution.sample(&mut simulation_state.rng);
@@ -106,8 +92,7 @@ impl ArrivalEvent {
 }
 
 impl Event<Store, Time> for ArrivalEvent {
-    /// If server is idle, mark it busy and schedule a service event.
-    /// Otherwise, increment the queue length.
+    /// If server is idle, mark it busy and schedule a service event. Otherwise, increment the queue length.
     ///
     /// Regardless, schedule a new ArrivalEvent.
     fn execute(&mut self, simulation_state: &mut Store, event_queue: &mut EventQueue<Store, Time>) -> Result {
@@ -133,14 +118,13 @@ impl Event<Store, Time> for ArrivalEvent {
     }
 }
 
-/// Handle the completion of a customer's service time
-/// at the counter.
+/// Handle the completion of a customer's service time at the counter.
 #[derive(Debug)]
 struct ServiceEvent {}
 
 impl ServiceEvent {
-    /// Draw an exponential random number with mean 20.0 to produce the next
-    /// service time and place a new ServiceEvent on the queue for that time.
+    /// Draw an exponential random number with mean 20.0 to produce the next service time and place a new ServiceEvent
+    /// on the queue for that time.
     fn schedule(simulation_state: &mut Store, event_queue: &mut EventQueue<Store, Time>) -> Result {
         let distribution = Exp::new(1.0 / 20.0).unwrap();
         let service_length = distribution.sample(&mut simulation_state.rng);
@@ -150,8 +134,7 @@ impl ServiceEvent {
 }
 
 impl Event<Store, Time> for ServiceEvent {
-    /// If at least one other customer is in line, decrement the length of the line
-    /// and schedule a new ServiceEvent.
+    /// If at least one other customer is in line, decrement the length of the line and schedule a new ServiceEvent.
     /// Otherwise, mark the server as idle.
     fn execute(&mut self, simulation_state: &mut Store, event_queue: &mut EventQueue<Store, Time>) -> Result {
         println!(
@@ -175,10 +158,9 @@ impl Event<Store, Time> for ServiceEvent {
     }
 }
 
-/// Initialize a store to be open from 8-5, then a simulation to
-/// start at 8. Schedule the first arrival event for a random time,
-/// from which all other events will be derived. Then, run the
-/// simulation - events will print to stdout as they execute.
+/// Initialize a store to be open from 8-5, then a simulation to start at 8. Schedule the first arrival event for a
+/// random time, from which all other events will be derived. Then, run the simulation - events will print to stdout as
+/// they execute.
 fn main() {
     let store = Store::new(540.0);
     let mut sim = Simulation::new(store, Time(0.0));

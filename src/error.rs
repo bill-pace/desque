@@ -1,39 +1,27 @@
-/// Errors that may be encountered while executing
-/// a simulation.
+/// Errors that may be encountered while executing a simulation.
 ///
-/// The [`BackInTime`] variant originates from the
-/// safe interface of the [`EventQueue`] or
-/// [`ThreadSafeEventQueue`] to indicate that an
-/// event's scheduled execution time is prior to the
-/// queue's current time. This error likely
-/// corresponds to a logical bug on the client side,
-/// e.g. forgetting to add an offset to the current
-/// time when scheduling a new event.
+/// The [`BackInTime`] variant originates from the safe interface of the [`serial::EventQueue`] or
+/// [`threadsafe::EventQueue`] to indicate that an event's scheduled execution time is prior to the queue's current
+/// time. This error likely corresponds to a logical bug on the client side, e.g. forgetting to add an offset to the
+/// current time when scheduling a new event.
 ///
-/// The [`BadExecution`] variant originates from client
-/// code, providing a wrapper that can pass through
-/// [`Simulation::run()`] or
-/// [`ThreadSafeSimulation::run()`] in a type-safe
-/// manner. Invoking [`std::error::Error::source()`]
-/// on this variant will acquire a shared reference to
-/// the wrapped [`std::error::Error`] for handling on
-/// the client side.
+/// The [`BadExecution`] variant originates from client code, providing a wrapper that can pass through
+/// [`serial::Simulation::run()`] or [`threadsafe::Simulation::run()`] in a type-safe manner. Invoking [`source()`] on
+/// this variant will acquire a shared reference to the wrapped [`std::error::Error`] for handling on the client side.
 ///
-/// [`EventQueue`]: crate::serial::EventQueue
-/// [`ThreadSafeEventQueue`]: crate::threadsafe::EventQueue
-/// [`Simulation::run()`]: crate::serial::Simulation::run
-/// [`ThreadSafeSimulation::run()`]: crate::threadsafe::Simulation::run
+/// [`serial::EventQueue`]: crate::serial::EventQueue
+/// [`threadsafe::EventQueue`]: crate::threadsafe::EventQueue
+/// [`serial::Simulation::run()`]: crate::serial::Simulation::run
+/// [`threadsafe::Simulation::run()`]: crate::threadsafe::Simulation::run
 /// [`BackInTime`]: Error::BackInTime
 /// [`BadExecution`]: Error::BadExecution
+/// [`source()`]: Error#method.source
 #[derive(Debug)]
 pub enum Error {
-    /// The event queue rejected an event that would
-    /// have been scheduled for a time that has
-    /// already passed.
+    /// The event queue rejected an event that would have been scheduled for a time that has already passed.
     BackInTime,
-    /// A client-generated error was encountered
-    /// while executing an event. Call [`source()`]
-    /// or unpack this value to handle it directly.
+    /// A client-generated error was encountered while executing an event. Call [`source()`] or unpack this value to
+    /// handle it directly.
     ///
     /// [`source()`]: #method.source
     BadExecution(Box<dyn std::error::Error + Send + Sync + 'static>),
@@ -77,8 +65,7 @@ impl std::error::Error for Error {
 
 /// [`std::result::Result`]`<(), `[`desque::Error`]`>`
 ///
-/// A type alias that simplifies the signatures of
-/// various functions in desque.
+/// Simplifies the signatures of various functions in desque.
 ///
 /// [`desque::Error`]: Error
 pub type Result = std::result::Result<(), Error>;

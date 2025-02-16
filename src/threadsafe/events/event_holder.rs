@@ -1,17 +1,11 @@
 use crate::threadsafe::{Event, SimState, SimTime};
 use std::cmp::Ordering;
 
-/// Helper struct for the event queue. This struct
-/// holds a [`Box`] to the event itself alongside the
-/// data necessary to sort events within the priority
-/// queue, namely the execution time and a record of
-/// the event's insertion sequence.
+/// Helper struct for the event queue. This struct holds a [`Box`] to the event itself alongside the data necessary to
+/// sort events within the priority queue, namely the execution time and a record of the event's insertion sequence.
 ///
-/// The implementation of [`Ord`] on this struct
-/// cares first about the execution time, giving full
-/// control of event ordering to client code,
-/// comparing the insertion sequences only to break
-/// ties.
+/// The implementation of [`Ord`] on this struct cares first about the execution time, giving full control of event
+/// ordering to client code, comparing the insertion sequences only to break ties.
 #[derive(Debug)]
 pub(super) struct EventHolder<State, Time>
 where

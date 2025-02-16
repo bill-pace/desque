@@ -12,31 +12,21 @@ use std::ops::Add;
 
 /// The generic type used for a simulation's clock.
 ///
-/// Kept generic to support as many variations of clock as
-/// possible. This trait is a superset of [`Ord`] and [`Debug`]
+/// Kept generic to support as many variations of clock as possible. This trait is a superset of [`Ord`] and [`Debug`]
 /// with no additional requirements or functionality.
 ///
-/// Your implementation of this trait should use the [`Ord`]
-/// trait to account for not only the overall sequencing of
-/// events, but also any tie breaking that may be necessary
-/// in your use case. Note that events will be executed in
-/// ascending order of execution time, i.e. if `A.cmp(&B) ==
-/// std::cmp::Ordering::Less` then event A will execute
-/// before event B.
+/// Your implementation of this trait should use the [`Ord`] trait to account for not only the overall sequencing of
+/// events, but also any tie breaking that may be necessary in your use case. Note that events will be executed in
+/// ascending order of execution time, i.e. if `A.cmp(&B) == std::cmp::Ordering::Less` then event A will execute before
+/// event B.
 ///
-/// [`Debug`] is necessary for the implementation of Debug
-/// on [`EventQueue`].
+/// [`Debug`] is necessary for the implementation of Debug on [`EventQueue`].
 ///
-/// Implementations are provided for integral builtin types,
-/// but not for floating-point builtin types as the latter do
-/// not implement [`Ord`]. If you wish to use either [`f32`] or
-/// [`f64`] as your [`SimTime`], either enable the
-/// `ordered-float` feature (and so add a dependency on the
-/// [`ordered-float`] crate) to gain access to an implementation
-/// on the [`OrderedFloat`] and [`NotNan`] structs, or create
-/// your own wrapper that guarantees full ordering. If you
-/// intend to use [`OrderedFloat`] or [`NotNan`] with your own
-/// custom types, ensure you also implement [`Debug`] to
+/// Implementations are provided for integral builtin types, but not for floating-point builtin types as the latter do
+/// not implement [`Ord`]. If you wish to use either [`f32`] or [`f64`] as your [`SimTime`], either enable the
+/// `ordered-float` feature (and so add a dependency on the [`ordered-float`] crate) to gain access to an implementation
+/// on the [`OrderedFloat`] and [`NotNan`] structs, or create your own wrapper that guarantees full ordering. If you
+/// intend to use [`OrderedFloat`] or [`NotNan`] with your own custom types, ensure you also implement [`Debug`] to
 /// satisfy the additional requirement on `SimTime`.
 ///
 /// [`ordered-float`]: https://docs.rs/ordered-float/4
@@ -65,41 +55,27 @@ impl<Float> SimTime for ordered_float::NotNan<Float> where Float: ordered_float:
 
 /// Priority queue of scheduled events.
 ///
-/// Events will execute in ascending order of execution time,
-/// with ties broken by the order in which they were pushed
-/// onto the queue. This tiebreaker is in addition to any
-/// built-in to the implementation of [`SimTime`] used for
-/// the clock as a way to stabilize the observed order of
-/// execution.
+/// Events will execute in ascending order of execution time, with ties broken by the order in which they were pushed
+/// onto the queue. This tiebreaker is in addition to any built-in to the implementation of [`SimTime`] used for the
+/// clock as a way to stabilize the observed order of execution.
 ///
-/// This struct is generic over the type used to represent
-/// clock time for the sake of tracking the current time,
-/// as well over the type used to represent simulation state
-/// so that it can work with appropriate event types.
+/// This struct is generic over the type used to represent clock time for the sake of tracking the current time, as well
+/// over the type used to represent simulation state so that it can work with appropriate event types.
 ///
-/// An [`EventQueue`] provides several different methods for
-/// scheduling new events, but does not publicly support
-/// popping; popping events from the queue only occurs during
-/// [`Simulation::run()`].
+/// An [`EventQueue`] provides several different methods for scheduling new events, but does not publicly support
+/// popping; popping events from the queue only occurs during [`Simulation::run()`].
 ///
 /// # Safety
 ///
-/// The safe methods provided for scheduling new events will
-/// compare the desired execution time against the current
-/// clock time. Attempting to schedule an event for a time that
-/// is already past will result in a [`Error::BackInTime`]
-/// without modifying the queue. This error indicates that
-/// client code probably has a logical error, as rewinding the
+/// The safe methods provided for scheduling new events will compare the desired execution time against the current
+/// clock time. Attempting to schedule an event for a time that is already past will result in an [`Error::BackInTime`]
+/// without modifying the queue. This error indicates that client code probably has a logical error, as rewinding the
 /// clock in a discrete-event simulation should be very rare.
 ///
-/// The similar unsafe methods skip the check against the
-/// current clock time, modifying the underlying queue on the
-/// assumption that client code provided the correct execution
-/// time for the event. No undefined behavior can occur as a
-/// result of using these methods, but improper usage may lead
-/// to logical errors that are difficult to debug, infinite
-/// loops, inconsistencies in the simulation state, or other
-/// problems that warrant an explicit "pay attention here"
+/// The similar unsafe methods skip the check against the current clock time, modifying the underlying queue on the
+/// assumption that client code provided the correct execution time for the event. No undefined behavior can occur as a
+/// result of using these methods, but improper usage may lead to logical errors that are difficult to debug, infinite
+/// loops, inconsistencies in the simulation state, or other problems that warrant an explicit "pay attention here"
 /// marker on call sites.
 ///
 /// [`Simulation::run()`]: crate::serial::Simulation::run
@@ -120,8 +96,7 @@ where
     State: SimState<Time>,
     Time: SimTime,
 {
-    /// Construct a new [`EventQueue`] with no scheduled events
-    /// and a clock initialized to the provided time.
+    /// Construct a new [`EventQueue`] with no scheduled events and a clock initialized to the provided time.
     pub(crate) fn new(start_time: Time) -> Self {
         Self {
             events: BinaryHeap::default(),
@@ -134,10 +109,8 @@ where
     ///
     /// # Errors
     ///
-    /// If `time` is less than the current clock time on
-    /// `self`, returns a [`Error::BackInTime`] to
-    /// indicate the likely presence of a logical bug at
-    /// the call site, with no modifications to the queue.
+    /// If `time` is less than the current clock time on `self`, returns an [`Error::BackInTime`] to indicate the likely
+    /// presence of a logical bug at the call site, with no modifications to the queue.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     pub fn schedule<EventType>(&mut self, event: EventType, time: Time) -> crate::Result
@@ -157,17 +130,15 @@ where
         Ok(())
     }
 
-    /// Schedule the provided event at the specified time. Assumes that the provided
-    /// time is valid in the context of the client's simulation.
+    /// Schedule the provided event at the specified time. Assumes that the provided time is valid in the context of the
+    /// client's simulation.
     ///
     /// # Safety
     ///
-    /// While this method cannot trigger undefined behaviors, scheduling an event
-    /// for a time in the past is likely to be a logical bug in client code. Generally,
-    /// this method should only be invoked if the condition `time >= clock` is already
-    /// enforced at the call site through some other means. For example, adding a
-    /// strictly positive offset to the current clock time to get the `time` argument
-    /// for the call.
+    /// While this method cannot trigger undefined behaviors, scheduling an event for a time in the past is likely to be
+    /// a logical bug in client code. Generally, this method should only be invoked if the condition `time >= clock` is
+    /// already enforced at the call site through some other means. For example, adding a strictly positive offset to
+    /// the current clock time to get the `time` argument for the call.
     pub unsafe fn schedule_unchecked<EventType>(&mut self, event: EventType, time: Time)
     where
         EventType: Event<State, Time> + 'static,
@@ -179,10 +150,8 @@ where
     ///
     /// # Errors
     ///
-    /// If `time` is less than the current clock time on
-    /// `self`, returns a [`Error::BackInTime`] to
-    /// indicate the likely presence of a logical bug at
-    /// the call site, with no modifications to the queue.
+    /// If `time` is less than the current clock time on `self`, returns an [`Error::BackInTime`] to indicate the likely
+    /// presence of a logical bug at the call site, with no modifications to the queue.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     pub fn schedule_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) -> crate::Result {
@@ -199,17 +168,15 @@ where
         Ok(())
     }
 
-    /// Schedule the provided event at the specified time. Assumes that the provided
-    /// time is valid in the context of the client's simulation.
+    /// Schedule the provided event at the specified time. Assumes that the provided time is valid in the context of the
+    /// client's simulation.
     ///
     /// # Safety
     ///
-    /// While this method cannot trigger undefined behaviors, scheduling an event
-    /// for a time in the past is likely to be a logical bug in client code. Generally,
-    /// this method should only be invoked if the condition `time >= clock` is already
-    /// enforced at the call site through some other means. For example, adding a
-    /// strictly positive offset to the current clock time to get the `time` argument
-    /// for the call.
+    /// While this method cannot trigger undefined behaviors, scheduling an event for a time in the past is likely to be
+    /// a logical bug in client code. Generally, this method should only be invoked if the condition `time >= clock` is
+    /// already enforced at the call site through some other means. For example, adding a strictly positive offset to
+    /// the current clock time to get the `time` argument for the call.
     pub unsafe fn schedule_unchecked_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) {
         let count = self.increment_event_count();
         self.events.push(Reverse(EventHolder {
@@ -219,17 +186,16 @@ where
         }));
     }
 
-    /// Helper function to make sure incrementing the
-    /// internal count of added events occurs the
-    /// same way across all scheduling methods.
+    /// Helper function to make sure incrementing the internal count of added events occurs the same way across all
+    /// scheduling methods.
     fn increment_event_count(&mut self) -> usize {
         let count = self.events_added;
         self.events_added += 1;
         count
     }
 
-    /// Crate-internal function to pop an event from the queue. Updates the
-    /// current clock time to match the execution time of the popped event.
+    /// Crate-internal function to pop an event from the queue. Updates the current clock time to match the execution
+    /// time of the popped event.
     pub(crate) fn next(&mut self) -> Option<Box<dyn Event<State, Time>>> {
         if let Some(event_holder) = self.events.pop() {
             self.last_execution_time = event_holder.0.execution_time;
@@ -250,14 +216,13 @@ where
     State: SimState<Time>,
     Time: SimTime + Clone + Add<Output = Time>,
 {
-    /// Schedule the provided event after the specified delay. The event's execution
-    /// time will be equal to the result of `self.current_time() + delay`.
+    /// Schedule the provided event after the specified delay. The event's execution time will be equal to the result of
+    /// `self.current_time().clone() + delay`.
     ///
     /// # Errors
     ///
-    /// If the calculated execution time is less than the current clock time on
-    /// `self`, returns a [`Error::BackInTime`] to indicate the likely presence of
-    /// a logical bug at the call site, with no modifications to the queue.
+    /// If the calculated execution time is less than the current clock time on `self`, returns an [`Error::BackInTime`]
+    /// to indicate the likely presence of a logical bug at the call site, with no modifications to the queue.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     pub fn schedule_with_delay<EventType>(&mut self, event: EventType, delay: Time) -> crate::Result
@@ -268,14 +233,13 @@ where
         self.schedule(event, event_time)
     }
 
-    /// Schedule the provided event after the specified delay. The event's execution
-    /// time will be equal to the result of `self.current_time() + delay`.
+    /// Schedule the provided event after the specified delay. The event's execution time will be equal to the result of
+    /// `self.current_time().clone() + delay`.
     ///
     /// # Errors
     ///
-    /// If the calculated execution time is less than the current clock time on
-    /// `self`, returns a [`Error::BackInTime`] to indicate the likely presence of
-    /// a logical bug at the call site, with no modifications to the queue.
+    /// If the calculated execution time is less than the current clock time on `self`, returns an [`Error::BackInTime`]
+    /// to indicate the likely presence of a logical bug at the call site, with no modifications to the queue.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     pub fn schedule_with_delay_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, delay: Time) -> crate::Result {

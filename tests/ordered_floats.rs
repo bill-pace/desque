@@ -132,8 +132,7 @@ mod ordered_float_tests {
         }
     }
 
-    /// Mark simulation as complete and add time in queue
-    /// for customers who haven't reached the counter yet
+    /// Mark simulation as complete and add time in queue for customers who haven't reached the counter yet
     #[derive(Debug)]
     struct EndEvent {}
 

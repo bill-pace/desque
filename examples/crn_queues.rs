@@ -1,32 +1,21 @@
-//! This example demonstrates the use of a variance reduction
-//! technique from the statistical field of design of experiments in
-//! desque, taking advantage of desque's ability to avoid using
-//! static storage for simulation state. The simulation here will
-//! compare an M/M/1 queue with mean service rate of 6 customers per
-//! minute against an M/M/2 queue with mean service rate of 3/min at
-//! each server and an M/M/3 queue with mean of 2/min at each server.
+//! This example demonstrates the use of a variance reduction technique from the statistical field of design of
+//! experiments in desque, taking advantage of desque's ability to avoid using static storage for simulation state. The
+//! simulation here will compare an M/M/1 queue with mean service rate of 6 customers per minute against an M/M/2 queue
+//! with mean service rate of 3/min at each server and an M/M/3 queue with mean of 2/min at each server.
 //!
-//! Common Random Numbers, or CRN, is a variance-reduction technique
-//! that sacrifices the statistical independence of select repetitions
-//! across different courses of action, in a controlled manner, for the
-//! sake of decreasing the variance of output statistics. The loss of
-//! independence across these reps must be accounted for in statistical
-//! analysis, e.g. by analyzing pairwise differences. Simulation code
-//! must prepare for this use case by ensuring that each draw from the
-//! generator is used for the same purpose in every rep that reuses the
-//! starting seed.
+//! Common Random Numbers, or CRN, is a variance-reduction technique that sacrifices the statistical independence of
+//! select repetitions across different courses of action, in a controlled manner, for the sake of decreasing the
+//! variance of output statistics. The loss of independence across these reps must be accounted for in statistical
+//! analysis, e.g. by analyzing pairwise differences. Simulation code must prepare for this use case by ensuring that
+//! each draw from the generator is used for the same purpose in every rep that reuses the starting seed.
 //!
-//! In terms of a queueing simulation, CRN is roughly equivalent to
-//! subjecting each of several server configurations to the same set(s)
-//! of customers - i.e. instead of rolling N unique "business days" for
-//! each server configuration up for comparison to get a total of N*S
-//! unique and independent sets of customers, CRN rolls N unique business
-//! days in total and feeds each of them through all server configurations.
-//! Simulation code should pull a uniform, random number from [0, 1) on
-//! customer arrival for future calculation of the customer's service time,
-//! rather than waiting for the customer to also clear the queue, which
-//! then ensures the same random numbers are used for the same purposes in
-//! each server configuration.
+//! In terms of a queueing simulation, CRN is roughly equivalent to subjecting each of several server configurations to
+//! the same set(s) of customers - i.e. instead of rolling N unique "business days" for each server configuration up for
+//! comparison to get a total of N*S unique and independent sets of customers, CRN rolls N unique business days in total
+//! and feeds each of them through all server configurations. Simulation code should pull a uniform, random number from
+//! [0, 1) on customer arrival for future calculation of the customer's service time, rather than waiting for the
+//! customer to also clear the queue, which then ensures the same random numbers are used for the same purposes in each
+//! server configuration.
 
 use desque::serial::*;
 use rand::{Rng, SeedableRng};
@@ -173,8 +162,7 @@ impl OkEvent<Store, F64Time> for ServiceEvent {
     }
 }
 
-/// Mark simulation as complete and add time in queue
-/// for customers who haven't reached the counter yet
+/// Mark simulation as complete and add time in queue for customers who haven't reached the counter yet
 #[derive(Debug)]
 struct EndEvent {}
 

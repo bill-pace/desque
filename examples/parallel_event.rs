@@ -1,16 +1,12 @@
-//! This example shows a population attempting to grow exponentially with finite
-//! resources. Every generation, each member of the population attempts to eat
-//! one unit of food - if successful, it spawns four new members. Either way,
-//! it dies. Thus, the population will increase by 3 for every member who is
-//! able to eat during a generation, and decrease by 1 for every member who
-//! is unable to find food. Sim time here is measured in generations and so
-//! fits with `usize`, and the simulation is rigged to terminate only
-//! "between" generations - i.e., immediately following the `StatusUpdateEvent`,
-//! and only if no food remains in the ecosystem.
+//! This example shows a population attempting to grow exponentially with finite resources. Every generation, each
+//! member of the population attempts to eat one unit of food - if successful, it spawns four new members. Either way,
+//! it dies. Thus, the population will increase by 3 for every member who is able to eat during a generation, and
+//! decrease by 1 for every member who is unable to find food. Sim time here is measured in generations and so fits with
+//! `usize`, and the simulation is rigged to terminate only "between" generations - i.e., immediately following the
+//! `StatusUpdateEvent`, and only if no food remains in the ecosystem.
 //!
-//! This example showcases how the elements of desque's `threadsafe` module
-//! support multithreaded execution of a single simulation by having each
-//! "birth" take place on a new thread.
+//! This example showcases how the elements of desque's `threadsafe` module support multithreaded execution of a single
+//! simulation by having each "birth" take place on a new thread.
 
 use desque::threadsafe::*;
 use std::sync::atomic;

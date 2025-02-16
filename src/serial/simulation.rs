@@ -4,22 +4,16 @@ use std::fmt::{Debug, Formatter};
 
 /// The generic type used for a simulation's overall state.
 ///
-/// This type may include to-date summary statistics, collections
-/// of simulated entities, terrain maps, historical records of
-/// simulated events, or whatever else is necessary to describe
-/// the real-world process or phenomenon in a program.
+/// This type may include to-date summary statistics, collections of simulated entities, terrain maps, historical
+/// records of simulated events, or whatever else is necessary to describe the real-world process or phenomenon in a
+/// program.
 ///
-/// This trait has only one method, which provides a way for the
-/// [`Simulation::run()`] method to ask whether it should wrap
-/// up event execution. The default implementation of this
-/// method will always answer "no," and so a simulation running
-/// with that implementation will continue until the event queue
-/// becomes empty.
+/// This trait has only one method, which provides a way for the [`Simulation::run()`] method to ask whether it should
+/// wrap up event execution. The default implementation of this method will always answer "no," and so a simulation
+/// running with that implementation will continue until the event queue becomes empty.
 ///
-/// Making this trait generic over the type used for clock time
-/// enables the [`is_complete()`] method to take a shared
-/// reference to that type with full access to any method with
-/// a `&self` receiver.
+/// Making this trait generic over the type used for clock time enables the [`is_complete()`] method to take a shared
+/// reference to that type with full access to any method with a `&self` receiver.
 ///
 /// [`Simulation::run()`]: Simulation::run
 /// [`is_complete()`]: SimState::is_complete
@@ -27,19 +21,15 @@ pub trait SimState<Time>
 where
     Time: SimTime,
 {
-    /// Reports whether the simulation has run to completion.
-    /// This method will be invoked in [`Simulation::run()`]
-    /// before popping each event off the queue: `true` indicates
-    /// that the simulation is finished and that [`run()`] should
-    /// break out of its loop, whereas `false` means that [`run()`]
-    /// should continue with the next scheduled event.
+    /// Reports whether the simulation has run to completion. This method will be invoked in [`Simulation::run()`]
+    /// before popping each event off the queue: `true` indicates that the simulation is finished and that [`run()`]
+    /// should break out of its loop, whereas `false` means that [`run()`] should continue with the next scheduled
+    /// event.
     ///
-    /// The default implementation always returns false, which
-    /// results in the simulation continuing until the event
+    /// The default implementation always returns false, which results in the simulation continuing until the event
     /// queue empties out.
     ///
-    /// The `current_time` argument will provide shared access
-    /// to the internally tracked simulation clock.
+    /// The `current_time` argument will provide shared access to the internally tracked simulation clock.
     ///
     /// [`Simulation::run()`]: Simulation::run
     /// [`run()`]: Simulation::run
@@ -51,15 +41,11 @@ where
     }
 }
 
-/// Contains the event queue and other state belonging to
-/// a simulation.
+/// Contains the event queue and other state belonging to a simulation.
 ///
-/// The defining struct for a discrete-event simulation in
-/// desque. A [`Simulation`] owns both its state and its
-/// event queue, providing both shared and mutable access
-/// to each so clients can set up and tear down instances
-/// as needed - for example, scheduling initial events or
-/// writing the final state to output.
+/// The defining struct for a discrete-event simulation in desque. A [`Simulation`] owns both its state and its event
+/// queue, providing both shared and mutable access to each so clients can set up and tear down instances as needed -
+/// for example, scheduling initial events or writing the final state to output.
 ///
 /// The expected workflow for a Simulation is:
 ///
@@ -67,12 +53,10 @@ where
 /// 2. Pass this struct and the start time to [`new()`].
 /// 3. Schedule at least one initial event.
 /// 4. Call [`run()`]. Handle any error it might return.
-/// 5. Use the [`state()`] or [`state_mut()`] accessors
-///    to finish processing the results.
+/// 5. Use the [`state()`] or [`state_mut()`] accessors to finish processing the results.
 ///
-/// A [`Simulation`] also provides the same event-scheduling
-/// interface as its underlying queue for the purpose of
-/// making step 3 slightly simpler.
+/// A [`Simulation`] also provides the same event-scheduling interface as its underlying queue for the purpose of making
+/// step 3 slightly simpler.
 ///
 /// [`new()`]: Simulation::new
 /// [`run()`]: Simulation::run
@@ -84,11 +68,9 @@ where
     State: SimState<Time>,
     Time: SimTime,
 {
-    /// A priority queue of events that have been scheduled
-    /// to execute, ordered ascending by execution time.
+    /// A priority queue of events that have been scheduled to execute, ordered ascending by execution time.
     event_queue: EventQueue<State, Time>,
-    /// The current shared state of the Simulation. Exclusive
-    /// access will be granted to each event that executes.
+    /// The current shared state of the Simulation. Exclusive access will be granted to each event that executes.
     state: State,
 }
 
@@ -97,9 +79,8 @@ where
     State: SimState<Time>,
     Time: SimTime,
 {
-    /// Initialize a Simulation instance with the provided
-    /// starting state and an event queue with clock set
-    /// to the provided starting time.
+    /// Initialize a Simulation instance with the provided starting state and an event queue with clock set to the
+    /// provided starting time.
     pub fn new(initial_state: State, start_time: Time) -> Self {
         Self {
             event_queue: EventQueue::new(start_time),
@@ -107,34 +88,26 @@ where
         }
     }
 
-    /// Execute events from the priority queue, one at a time,
-    /// in ascending order by execution time.
+    /// Execute events from the priority queue, one at a time, in ascending order by execution time.
     ///
     /// Follows this loop:
     ///
     /// 1. Does [`state.is_complete()`] return true? If so, return `Ok(())`.
-    /// 2. Attempt to pop the next event from the queue. If there isn't
-    ///    one, return `Ok(())`.
-    /// 3. Pass exclusive references to the state and event queue to
-    ///    [`event.execute()`].
+    /// 2. Attempt to pop the next event from the queue. If there isn't one, return `Ok(())`.
+    /// 3. Pass exclusive references to the state and event queue to [`event.execute()`].
     ///     1. If an error is returned, forward it as-is to the caller.
     ///     2. Otherwise, go back to step 1.
     ///
     /// # Errors
     ///
-    /// Errors may occur during execution of events, and if encountered
-    /// here they will be passed back to the caller, unchanged. The two
-    /// variants directly supported are:
+    /// Errors may occur during execution of events, and if encountered here they will be passed back to the caller,
+    /// unchanged. The two variants directly supported are:
     ///
-    /// 1. [`Error::BackInTime`] means that client code attempted to
-    ///    schedule an event at some point in the simulation's past.
-    ///    This error is a likely indicator that client code contains
-    ///    a logical bug, as most discrete-event simulations would
-    ///    never rewind their clocks.
-    /// 2. [`Error::BadExecution`] wraps a client-generated error in a
-    ///    way that is type-safe to feed back through this method. To
-    ///    handle the underlying error, either unpack the [`BadExecution`]
-    ///    or call its [`source()`] method.
+    /// 1. [`Error::BackInTime`] means that client code attempted to schedule an event at some point in the simulation's
+    ///    past. This error is a likely indicator that client code contains a logical bug, as most discrete-event
+    ///    simulations would never rewind their clocks.
+    /// 2. [`Error::BadExecution`] wraps a client-generated error in a way that is type-safe to feed back through this
+    ///    method. To handle the underlying error, either unpack the [`BadExecution`] or call its [`source()`] method.
     ///
     /// [`state.is_complete()`]: SimState::is_complete
     /// [`event.execute()`]: Event::execute
@@ -165,11 +138,8 @@ where
     ///
     /// # Errors
     ///
-    /// If `time` is less than the current clock time on
-    /// `self`, returns a
-    /// [`Error::BackInTime`] to indicate the likely presence
-    /// of a logical bug at the call site, with no modifications
-    /// to the queue.
+    /// If `time` is less than the current clock time on `self`, returns an [`Error::BackInTime`] to indicate the likely
+    /// presence of a logical bug at the call site, with no modifications to the queue.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     pub fn schedule<EventType>(&mut self, event: EventType, time: Time) -> crate::Result
@@ -179,17 +149,15 @@ where
         self.event_queue.schedule(event, time)
     }
 
-    /// Schedule the provided event at the specified time. Assumes that the provided
-    /// time is valid in the context of the client's simulation.
+    /// Schedule the provided event at the specified time. Assumes that the provided time is valid in the context of the
+    /// client's simulation.
     ///
     /// # Safety
     ///
-    /// While this method cannot trigger undefined behaviors, scheduling an event
-    /// for a time in the past is likely to be a logical bug in client code. Generally,
-    /// this method should only be invoked if the condition `time >= clock` is already
-    /// enforced at the call site through some other means. For example, adding a
-    /// strictly positive offset to the current clock time to get the `time` argument
-    /// for the call.
+    /// While this method cannot trigger undefined behaviors, scheduling an event for a time in the past is likely to be
+    /// a logical bug in client code. Generally, this method should only be invoked if the condition `time >= clock` is
+    /// already enforced at the call site through some other means. For example, adding a strictly positive offset to
+    /// the current clock time to get the `time` argument for the call.
     pub unsafe fn schedule_unchecked<EventType>(&mut self, event: EventType, time: Time)
     where
         EventType: Event<State, Time> + 'static,
@@ -201,27 +169,23 @@ where
     ///
     /// # Errors
     ///
-    /// If `time` is less than the current clock time on
-    /// `self`, returns a [`Error::BackInTime`] to indicate the
-    /// likely presence of a logical bug at the call site, with
-    /// no modifications to the queue.
+    /// If `time` is less than the current clock time on `self`, returns an [`Error::BackInTime`] to indicate the likely
+    /// presence of a logical bug at the call site, with no modifications to the queue.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     pub fn schedule_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) -> crate::Result {
         self.event_queue.schedule_from_boxed(event, time)
     }
 
-    /// Schedule the provided event at the specified time. Assumes that the provided
-    /// time is valid in the context of the client's simulation.
+    /// Schedule the provided event at the specified time. Assumes that the provided time is valid in the context of the
+    /// client's simulation.
     ///
     /// # Safety
     ///
-    /// While this method cannot trigger undefined behaviors, scheduling an event
-    /// for a time in the past is likely to be a logical bug in client code. Generally,
-    /// this method should only be invoked if the condition `time >= clock` is already
-    /// enforced at the call site through some other means. For example, adding a
-    /// strictly positive offset to the current clock time to get the `time` argument
-    /// for the call.
+    /// While this method cannot trigger undefined behaviors, scheduling an event for a time in the past is likely to be
+    /// a logical bug in client code. Generally, this method should only be invoked if the condition `time >= clock` is
+    /// already enforced at the call site through some other means. For example, adding a strictly positive offset to
+    /// the current clock time to get the `time` argument for the call.
     pub unsafe fn schedule_unchecked_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, time: Time) {
         self.event_queue.schedule_unchecked_from_boxed(event, time);
     }

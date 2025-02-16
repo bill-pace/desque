@@ -14,15 +14,11 @@ use std::sync::Mutex;
 
 /// The generic type used for a simulation's clock.
 ///
-/// Kept generic to support as many variations of clock as
-/// possible. This trait is a superset of [`serial::SimTime`],
-/// [`Send`], and [`Sync`] and is automatically implemented
-/// for all types that implement those traits.
+/// Kept generic to support as many variations of clock as possible. This trait is a superset of [`serial::SimTime`],
+/// [`Send`], and [`Sync`] and is automatically implemented for all types that implement those traits.
 ///
-/// Enabling the `ordered-float` feature on desque includes
-/// the [`OrderedFloat`] and [`NotNan`] types from the
-/// [`ordered-float`] crate in the provided implementations,
-/// just like with [`serial::SimTime`].
+/// Enabling the `ordered-float` feature on desque includes the [`OrderedFloat`] and [`NotNan`] types from the
+/// [`ordered-float`] crate in the provided implementations, just like with [`serial::SimTime`].
 ///
 /// [`ordered-float`]: https://docs.rs/ordered-float/4
 /// [`OrderedFloat`]: https://docs.rs/ordered-float/4/ordered_float/struct.OrderedFloat.html
@@ -33,63 +29,43 @@ impl<T> SimTime for T where T: serial::SimTime + Send + Sync {}
 
 /// Priority queue of scheduled events.
 ///
-/// Events will execute in ascending order of execution time,
-/// with ties broken by the order in which they were pushed
-/// onto the queue. This tiebreaker is in addition to any
-/// built-in to the implementation of [`SimTime`]
-/// used for the clock as a way to stabilize the observed
-/// order of execution.
+/// Events will execute in ascending order of execution time, with ties broken by the order in which they were pushed
+/// onto the queue. This tiebreaker is in addition to any built-in to the implementation of [`SimTime`] used for the
+/// clock as a way to stabilize the observed order of execution.
 ///
-/// This struct is generic over the type used to represent
-/// clock time for the sake of tracking the current time,
-/// as well over the type used to represent simulation state
-/// so that it can work with appropriate event types.
+/// This struct is generic over the type used to represent clock time for the sake of tracking the current time, as well
+/// as over the type used to represent simulation state so that it can work with appropriate event types.
 ///
-/// A [`EventQueue`] provides several different
-/// methods for scheduling new events, but does not publicly
-/// support popping; popping events from the queue only occurs
-/// during [`ThreadSafeSimulation::run()`].
+/// A [`EventQueue`] provides several different methods for scheduling new events, but does not publicly support
+/// popping; popping events from the queue only occurs during [`Simulation::run()`].
 ///
 /// # Safety
 ///
-/// The safe methods provided for scheduling new events will
-/// compare the desired execution time against the current
-/// clock time. Attempting to schedule an event for a time that
-/// is already past will result in a [`Error::BackInTime`]
-/// without modifying the queue. This error indicates that
-/// client code probably has a logical error, as rewinding the
+/// The safe methods provided for scheduling new events will compare the desired execution time against the current
+/// clock time. Attempting to schedule an event for a time that is already past will result in a [`Error::BackInTime`]
+/// without modifying the queue. This error indicates that client code probably has a logical error, as rewinding the
 /// clock in a discrete-event simulation should be very rare.
 ///
-/// The similar unsafe methods skip the check against the
-/// current clock time, modifying the underlying queue on the
-/// assumption that client code provided the correct execution
-/// time for the event. No undefined behavior can occur as a
-/// result of using these methods, but improper usage may lead
-/// to logical errors that are difficult to debug, infinite
-/// loops, inconsistencies in the simulation state, or other
-/// problems that warrant an explicit "pay attention here"
+/// The similar unsafe methods skip the check against the current clock time, modifying the underlying queue on the
+/// assumption that client code provided the correct execution time for the event. No undefined behavior can occur as a
+/// result of using these methods, but improper usage may lead to logical errors that are difficult to debug, infinite
+/// loops, inconsistencies in the simulation state, or other problems that warrant an explicit "pay attention here"
 /// marker on call sites.
 ///
 /// # Synchronization
 ///
-/// All synchronization is handled via a [`Mutex`] around the
-/// underlying priority queue. This [`Mutex`] is locked for
-/// all forms of the [`schedule()`] method to enqueue new
-/// events, when popping an event to advance the simulation,
-/// and for checking the queue's length in the implementation
-/// of [`std::fmt::Display`]. None of these methods expose
-/// the resulting [`MutexGuard`], and so it is also unlocked
-/// before the simulation makes additional progress.
+/// All synchronization is handled via a [`Mutex`] around the underlying priority queue. This [`Mutex`] is locked for
+/// all forms of the [`schedule()`] method to enqueue new events, when popping an event to advance the simulation, and
+/// for checking the queue's length in the implementation of [`std::fmt::Display`]. None of these methods expose the
+/// resulting [`MutexGuard`], and so it is also unlocked before the simulation makes additional progress.
 ///
 /// # Panics
 ///
-/// All forms of [`schedule()`] and the implementation of
-/// [`std::fmt::Display`] are capable of panicking if the
-/// [`Mutex`] becomes poisoned. This poisoning is unlikely to
-/// occur, however, as it is always unlocked before
-/// returning control to client code.
+/// All forms of [`schedule()`] and the implementation of [`std::fmt::Display`] are capable of panicking if the
+/// [`Mutex`] becomes poisoned. This poisoning is unlikely to occur, however, as it is always unlocked before returning
+/// control to client code.
 ///
-/// [`ThreadSafeSimulation::run()`]: super::Simulation::run
+/// [`Simulation::run()`]: super::Simulation::run
 /// [`Error::BackInTime`]: crate::Error::BackInTime
 /// [`schedule()`]: EventQueue::schedule
 /// [`MutexGuard`]: std::sync::MutexGuard
@@ -101,10 +77,8 @@ where
 {
     events: Mutex<BinaryHeap<Reverse<EventHolder<State, Time>>>>,
     last_execution_time: Time,
-    /// Using an atomic here allows for interior mutability, but
-    /// synchronization is actually controlled by the mutex on
-    /// the `events` field. This value will only mutate with that
-    /// mutex locked, and so can use entirely Relaxed ordering.
+    /// Using an atomic here allows for interior mutability, but synchronization is actually controlled by the mutex on
+    /// the `events` field. This value will only mutate with that mutex locked, and so can use entirely Relaxed ordering
     events_added: atomic::AtomicUsize,
 }
 
@@ -113,8 +87,7 @@ where
     State: SimState<Time>,
     Time: SimTime,
 {
-    /// Construct a new [`EventQueue`] with no scheduled events
-    /// and a clock initialized to the provided time.
+    /// Construct a new [`EventQueue`] with no scheduled events and a clock initialized to the provided time.
     pub(crate) fn new(start_time: Time) -> Self {
         Self {
             events: Mutex::default(),
@@ -127,16 +100,13 @@ where
     ///
     /// # Errors
     ///
-    /// If `time` is less than the current clock time on
-    /// `self`, returns a [`Error::BackInTime`] to
-    /// indicate the likely presence of a logical bug at
-    /// the call site, with no modifications to the queue.
+    /// If `time` is less than the current clock time on `self`, returns a [`Error::BackInTime`] to indicate the likely
+    /// presence of a logical bug at the call site, with no modifications to the queue.
     ///
     /// # Panics
     ///
-    /// If the [`Mutex`] protecting the underlying priority queue implementation has
-    /// been poisoned by another thread panicking while it is locked, this method
-    /// will also panic.
+    /// If the [`Mutex`] protecting the underlying priority queue implementation has been poisoned by another thread
+    /// panicking while it is locked, this method will also panic.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     pub fn schedule<EventType>(&self, event: EventType, time: Time) -> crate::Result
@@ -156,23 +126,20 @@ where
         Ok(())
     }
 
-    /// Schedule the provided event at the specified time. Assumes that the provided
-    /// time is valid in the context of the client's simulation.
+    /// Schedule the provided event at the specified time. Assumes that the provided time is valid in the context of the
+    /// client's simulation.
     ///
     /// # Safety
     ///
-    /// While this method cannot trigger undefined behaviors, scheduling an event
-    /// for a time in the past is likely to be a logical bug in client code. Generally,
-    /// this method should only be invoked if the condition `time >= clock` is already
-    /// enforced at the call site through some other means. For example, adding a
-    /// strictly positive offset to the current clock time to get the `time` argument
-    /// for the call.
+    /// While this method cannot trigger undefined behaviors, scheduling an event for a time in the past is likely to be
+    /// a logical bug in client code. Generally, this method should only be invoked if the condition `time >= clock` is
+    /// already enforced at the call site through some other means. For example, adding a strictly positive offset to
+    /// the current clock time to get the `time` argument for the call.
     ///
     /// # Panics
     ///
-    /// If the [`Mutex`] protecting the underlying priority queue implementation has
-    /// been poisoned by another thread panicking while it is locked, this method
-    /// will also panic.
+    /// If the [`Mutex`] protecting the underlying priority queue implementation has been poisoned by another thread
+    /// panicking while it is locked, this method will also panic.
     pub unsafe fn schedule_unchecked<EventType>(&self, event: EventType, time: Time)
     where
         EventType: Event<State, Time> + 'static,
@@ -184,16 +151,13 @@ where
     ///
     /// # Errors
     ///
-    /// If `time` is less than the current clock time on
-    /// `self`, returns a [`Error::BackInTime`] to
-    /// indicate the likely presence of a logical bug at
-    /// the call site, with no modifications to the queue.
+    /// If `time` is less than the current clock time on `self`, returns a [`Error::BackInTime`] to indicate the likely
+    /// presence of a logical bug at the call site, with no modifications to the queue.
     ///
     /// # Panics
     ///
-    /// If the [`Mutex`] protecting the underlying priority queue implementation has
-    /// been poisoned by another thread panicking while it is locked, this method
-    /// will also panic.
+    /// If the [`Mutex`] protecting the underlying priority queue implementation has been poisoned by another thread
+    /// panicking while it is locked, this method will also panic.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     pub fn schedule_from_boxed(&self, event: Box<dyn Event<State, Time>>, time: Time) -> crate::Result {
@@ -210,23 +174,20 @@ where
         Ok(())
     }
 
-    /// Schedule the provided event at the specified time. Assumes that the provided
-    /// time is valid in the context of the client's simulation.
+    /// Schedule the provided event at the specified time. Assumes that the provided time is valid in the context of the
+    /// client's simulation.
     ///
     /// # Safety
     ///
-    /// While this method cannot trigger undefined behaviors, scheduling an event
-    /// for a time in the past is likely to be a logical bug in client code. Generally,
-    /// this method should only be invoked if the condition `time >= clock` is already
-    /// enforced at the call site through some other means. For example, adding a
-    /// strictly positive offset to the current clock time to get the `time` argument
-    /// for the call.
+    /// While this method cannot trigger undefined behaviors, scheduling an event for a time in the past is likely to be
+    /// a logical bug in client code. Generally, this method should only be invoked if the condition `time >= clock` is
+    /// already enforced at the call site through some other means. For example, adding a strictly positive offset to
+    /// the current clock time to get the `time` argument for the call.
     ///
     /// # Panics
     ///
-    /// If the [`Mutex`] protecting the underlying priority queue implementation has
-    /// been poisoned by another thread panicking while it is locked, this method
-    /// will also panic.
+    /// If the [`Mutex`] protecting the underlying priority queue implementation has been poisoned by another thread
+    /// panicking while it is locked, this method will also panic.
     pub unsafe fn schedule_unchecked_from_boxed(&self, event: Box<dyn Event<State, Time>>, time: Time) {
         let mut events_guard = self
             .events
@@ -240,14 +201,13 @@ where
         }));
     }
 
-    /// Crate-internal function to pop an event from the queue. Updates the
-    /// current clock time to match the execution time of the popped event.
+    /// Crate-internal function to pop an event from the queue. Updates the current clock time to match the execution
+    /// time of the popped event.
     ///
     /// # Panics
     ///
-    /// If the [`Mutex`] protecting the underlying priority queue implementation has
-    /// been poisoned by another thread panicking while it is locked, this method
-    /// will also panic.
+    /// If the [`Mutex`] protecting the underlying priority queue implementation has been poisoned by another thread
+    /// panicking while it is locked, this method will also panic.
     pub(crate) fn next(&mut self) -> Option<Box<dyn Event<State, Time>>> {
         if let Some(event_holder) = self
             .events
@@ -273,20 +233,18 @@ where
     State: SimState<Time>,
     Time: SimTime + Clone + Add<Output = Time>,
 {
-    /// Schedule the provided event after the specified delay. The event's execution
-    /// time will be equal to the result of `self.current_time() + delay`.
+    /// Schedule the provided event after the specified delay. The event's execution time will be equal to the result of
+    /// `self.current_time().clone() + delay`.
     ///
     /// # Errors
     ///
-    /// If the calculated execution time is less than the current clock time on
-    /// `self`, returns a [`Error::BackInTime`] to indicate the likely presence of
-    /// a logical bug at the call site, with no modifications to the queue.
+    /// If the calculated execution time is less than the current clock time on `self`, returns a [`Error::BackInTime`]
+    /// to indicate the likely presence of a logical bug at the call site, with no modifications to the queue.
     ///
     /// # Panics
     ///
-    /// If the [`Mutex`] protecting the underlying priority queue implementation has
-    /// been poisoned by another thread panicking while it is locked, this method
-    /// will also panic.
+    /// If the [`Mutex`] protecting the underlying priority queue implementation has been poisoned by another thread
+    /// panicking while it is locked, this method will also panic.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     pub fn schedule_with_delay<EventType>(&self, event: EventType, delay: Time) -> crate::Result
@@ -297,20 +255,18 @@ where
         self.schedule(event, event_time)
     }
 
-    /// Schedule the provided event after the specified delay. The event's execution
-    /// time will be equal to the result of `self.current_time() + delay`.
+    /// Schedule the provided event after the specified delay. The event's execution time will be equal to the result of
+    /// `self.current_time().clone() + delay`.
     ///
     /// # Errors
     ///
-    /// If the calculated execution time is less than the current clock time on
-    /// `self`, returns a [`Error::BackInTime`] to indicate the likely presence of
-    /// a logical bug at the call site, with no modifications to the queue.
+    /// If the calculated execution time is less than the current clock time on `self`, returns a [`Error::BackInTime`]
+    /// to indicate the likely presence of a logical bug at the call site, with no modifications to the queue.
     ///
     /// # Panics
     ///
-    /// If the [`Mutex`] protecting the underlying priority queue implementation has
-    /// been poisoned by another thread panicking while it is locked, this method
-    /// will also panic.
+    /// If the [`Mutex`] protecting the underlying priority queue implementation has been poisoned by another thread
+    /// panicking while it is locked, this method will also panic.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     pub fn schedule_with_delay_from_boxed(&self, event: Box<dyn Event<State, Time>>, delay: Time) -> crate::Result {

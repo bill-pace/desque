@@ -1,5 +1,4 @@
-/// Check whether two floats have a relative difference of at
-/// most 5e-5 times the smaller value.
+/// Check whether two floats have a relative difference of at most 5e-5 times the smaller value.
 #[macro_export]
 macro_rules! assert_floats_near_equal {
     ($val1:expr, $val2:expr, $msg:expr) => {{

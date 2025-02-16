@@ -144,8 +144,7 @@ impl OkEvent<Store, F64Time> for ServiceEvent {
     }
 }
 
-/// Mark simulation as complete and add time in queue
-/// for customers who haven't reached the counter yet
+/// Mark simulation as complete and add time in queue for customers who haven't reached the counter yet
 #[derive(Debug)]
 struct EndEvent {}
 
