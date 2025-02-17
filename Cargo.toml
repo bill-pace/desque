@@ -10,6 +10,9 @@ readme = "README.md"
 authors = ["Bill Pace"]
 keywords = ["discrete-event", "simulation", "des"]
 categories = ["simulation"]
+exclude = [
+    ".github",
+]
 
 [package.metadata.docs.rs]
 all-features = true
