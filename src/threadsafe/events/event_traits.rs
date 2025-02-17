@@ -73,8 +73,8 @@ where
 /// [`OkEvent::execute()`] then returns `Ok(())`.
 ///
 /// As with the requirement on [`Event`], implementing [`Debug`] enables a [`EventQueue`] to print all of its contents
-/// when client code deems it necessary. [`Send`] and [`Sync`] are similarly required for the promise that these events
-/// can be enqueued from any thread.
+/// when client code deems it necessary. [`Send`] is similarly required for the promise that these events can be
+/// enqueued from any thread.
 ///
 /// [`execute()`]: OkEvent::execute
 /// [`Event::execute()`]: Event::execute
