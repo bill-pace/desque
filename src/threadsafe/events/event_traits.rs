@@ -15,7 +15,7 @@ use std::fmt::Debug;
 /// you may wish to extend this trait or to otherwise provide a means for your interruptible events to determine whether
 /// they should execute when popped from the queue.
 ///
-/// [`threadsafe::Event`] differs only from [`serial::Event`] in the type of event queue parameter.
+/// [`threadsafe::Event`]'s interface differs only from [`serial::Event`]'s in the type of event queue parameter.
 ///
 /// [`threadsafe::Event`]: Event
 /// [`serial::Event`]: crate::serial::Event
