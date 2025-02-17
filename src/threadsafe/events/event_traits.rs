@@ -16,6 +16,9 @@ use std::fmt::Debug;
 /// they should execute when popped from the queue.
 ///
 /// [`threadsafe::Event`] differs only from [`serial::Event`] in the type of event queue parameter.
+///
+/// [`threadsafe::Event`]: Event
+/// [`serial::Event`]: crate::serial::Event
 pub trait Event<State, Time>: Debug + Send
 where
     State: SimState<Time>,
