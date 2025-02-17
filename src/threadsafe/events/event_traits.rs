@@ -21,6 +21,8 @@ use std::fmt::Debug;
 ///
 /// [`threadsafe::Event`]: Event
 /// [`serial::Event`]: crate::serial::Event
+/// [`threadsafe::EventQueue`]: EventQueue
+/// [`serial::EventQueue`]: crate::serial::EventQueue
 pub trait Event<State, Time>: Debug + Send
 where
     State: SimState<Time>,
