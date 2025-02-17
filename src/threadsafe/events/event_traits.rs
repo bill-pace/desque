@@ -7,14 +7,14 @@ use std::fmt::Debug;
 /// generic over the types used to represent simulation state and clock time to enable your implementations of each
 /// trait to work together within this framework.
 ///
-/// Requiring implementors to be [`Debug`] enables printing the full contents of a [`EventQueue`] when necessary. The
-/// [`Send`] and [`Sync`] requirements enable implementors to be scheduled from any thread, then shared across threads
-/// at execution time.
+/// Requiring implementors to be [`Debug`] enables printing the full contents of a [`EventQueue`] when necessary.
 ///
 /// Note that desque does not directly support the notion of interrupting events, so if you need that functionality then
 /// you may wish to extend this trait or to otherwise provide a means for your interruptible events to determine whether
 /// they should execute when popped from the queue.
-pub trait Event<State, Time>: Debug + Send + Sync
+/// 
+/// [`threadsafe::Event`] differs only from [`serial::Event`] in the type of event queue parameter.
+pub trait Event<State, Time>: Debug + Send
 where
     State: SimState<Time>,
     Time: SimTime,
@@ -71,7 +71,7 @@ where
 /// [`Event::execute()`]: Event::execute
 /// [`OkEvent::execute()`]: OkEvent::execute
 /// [`Error`]: crate::Error
-pub trait OkEvent<State, Time>: Debug + Send + Sync
+pub trait OkEvent<State, Time>: Debug + Send
 where
     State: SimState<Time>,
     Time: SimTime,
