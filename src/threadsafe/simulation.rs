@@ -58,7 +58,7 @@ where
 ///
 /// A [`Simulation`] also provides the same event-scheduling interface as its underlying queue for the purpose of making
 /// step 3 slightly simpler.
-/// 
+///
 /// A [`Simulation`] is [`Sync`], and will also be [`Send`] if and only if the [`SimState`] implementation is [`Send`].
 ///
 /// [`serial::Simulation`]: crate::serial::Simulation

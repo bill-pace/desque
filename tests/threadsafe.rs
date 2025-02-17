@@ -22,7 +22,9 @@ struct SpawnEvent {
 
 impl SpawnEvent {
     fn new() -> Self {
-        Self { _no_sync: std::marker::PhantomData }
+        Self {
+            _no_sync: std::marker::PhantomData,
+        }
     }
 }
 
