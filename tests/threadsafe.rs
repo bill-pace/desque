@@ -6,6 +6,7 @@ struct Ecosystem {
     population: atomic::AtomicUsize,
     remaining_food: usize,
     between_generations: bool,
+    _no_send: std::marker::PhantomData<std::sync::MutexGuard<'static, usize>>,
 }
 
 impl SimState<usize> for Ecosystem {
@@ -15,7 +16,17 @@ impl SimState<usize> for Ecosystem {
 }
 
 #[derive(Debug)]
-struct SpawnEvent {}
+struct SpawnEvent {
+    _no_sync: std::marker::PhantomData<*mut usize>,
+}
+
+impl SpawnEvent {
+    fn new() -> Self {
+        Self { _no_sync: std::marker::PhantomData }
+    }
+}
+
+unsafe impl Send for SpawnEvent {}
 
 impl OkEvent<Ecosystem, usize> for SpawnEvent {
     fn execute(&mut self, ecosystem: &mut Ecosystem, event_queue: &mut EventQueue<Ecosystem, usize>) {
@@ -30,7 +41,7 @@ impl OkEvent<Ecosystem, usize> for SpawnEvent {
                     for _ in 0..4 {
                         ecosystem.population.fetch_add(1, atomic::Ordering::Relaxed);
                         event_queue
-                            .schedule_with_delay(Self {}, 1)
+                            .schedule_with_delay(Self::new(), 1)
                             .expect("positive delay should result in no errors");
                     }
                 });
@@ -57,9 +68,10 @@ fn threadsafe_sim_reaches_expected_result() {
         population: atomic::AtomicUsize::new(1),
         remaining_food: 341,
         between_generations: true,
+        _no_send: std::marker::PhantomData,
     };
     let mut sim = Simulation::new(ecosystem, 0);
-    sim.schedule(SpawnEvent {}, 1)
+    sim.schedule(SpawnEvent::new(), 1)
         .expect("event should be scheduled with no errors");
     sim.schedule(StatusUpdateEvent {}, 1)
         .expect("event should be scheduled with no errors");

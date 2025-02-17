@@ -15,11 +15,11 @@ use std::fmt::Formatter;
 /// reference to that type with full access to any method with a `&self` receiver.
 ///
 /// In keeping with the goal of this module to make a simulation accessible to multiple threads, all implementors should
-/// be [`Send`] and [`Sync`].
+/// be [`Sync`].
 ///
 /// [`Simulation::run()`]: Simulation::run
 /// [`is_complete()`]: SimState::is_complete
-pub trait SimState<Time>: Send + Sync
+pub trait SimState<Time>: Sync
 where
     Time: SimTime,
 {
