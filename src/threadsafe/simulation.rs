@@ -15,7 +15,7 @@ use std::fmt::Formatter;
 /// reference to that type with full access to any method with a `&self` receiver.
 ///
 /// In keeping with the goal of this module to make a simulation accessible to multiple threads, all implementors should
-/// be [`Sync`].
+/// be [`Sync`]. If your implementor is also [`Send`], then [`Simulation`] will be [`Send`].
 ///
 /// [`Simulation::run()`]: Simulation::run
 /// [`is_complete()`]: SimState::is_complete
@@ -58,6 +58,8 @@ where
 ///
 /// A [`Simulation`] also provides the same event-scheduling interface as its underlying queue for the purpose of making
 /// step 3 slightly simpler.
+/// 
+/// A [`Simulation`] is [`Sync`], and will also be [`Send`] if and only if the [`SimState`] implementation is [`Send`].
 ///
 /// [`serial::Simulation`]: crate::serial::Simulation
 /// [`run()`]: Simulation::run

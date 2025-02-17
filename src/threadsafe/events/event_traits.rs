@@ -7,7 +7,9 @@ use std::fmt::Debug;
 /// generic over the types used to represent simulation state and clock time to enable your implementations of each
 /// trait to work together within this framework.
 ///
-/// Requiring implementors to be [`Debug`] enables printing the full contents of a [`EventQueue`] when necessary.
+/// Requiring implementors to be [`Debug`] enables printing the full contents of a [`EventQueue`] when necessary. Events
+/// must be [`Send`] to enable scheduling them on the event queue from any thread. However, desque does not require that
+/// events also be [`Sync`] as desque does not directly share events across thread boundaries.
 ///
 /// Note that desque does not directly support the notion of interrupting events, so if you need that functionality then
 /// you may wish to extend this trait or to otherwise provide a means for your interruptible events to determine whether
