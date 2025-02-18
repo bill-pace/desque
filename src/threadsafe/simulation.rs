@@ -1,4 +1,5 @@
-use super::{Event, EventQueue, SimTime};
+use super::{Event, EventQueue};
+use crate::SimTime;
 use std::fmt::Formatter;
 
 /// The generic type used for a simulation's overall state.
@@ -21,7 +22,7 @@ use std::fmt::Formatter;
 /// [`is_complete()`]: SimState::is_complete
 pub trait SimState<Time>: Sync
 where
-    Time: SimTime,
+    Time: SimTime + Send + Sync,
 {
     /// Reports whether the simulation has run to completion. This method will be invoked in [`Simulation::run()`]
     /// before popping each event off the queue: `true` indicates that the simulation is finished and that [`run()`]
@@ -69,7 +70,7 @@ where
 pub struct Simulation<State, Time>
 where
     State: SimState<Time>,
-    Time: SimTime,
+    Time: SimTime + Send + Sync,
 {
     /// A priority queue of events that have been scheduled to execute, ordered ascending by execution time.
     event_queue: EventQueue<State, Time>,
@@ -80,7 +81,7 @@ where
 impl<State, Time> Simulation<State, Time>
 where
     State: SimState<Time>,
-    Time: SimTime,
+    Time: SimTime + Send + Sync,
 {
     /// Initialize a Simulation instance with the provided starting state and an event queue with clock set to the
     /// provided starting time.
@@ -220,7 +221,7 @@ where
 impl<State, Time> std::fmt::Display for Simulation<State, Time>
 where
     State: SimState<Time>,
-    Time: SimTime,
+    Time: SimTime + Send + Sync,
 {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "Simulation at time {:?}", self.event_queue.current_time())

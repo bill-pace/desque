@@ -1,4 +1,5 @@
-use crate::threadsafe::{Event, SimState, SimTime};
+use crate::threadsafe::{Event, SimState};
+use crate::SimTime;
 use std::cmp::Ordering;
 
 /// Helper struct for the event queue. This struct holds a [`Box`] to the event itself alongside the data necessary to
@@ -10,7 +11,7 @@ use std::cmp::Ordering;
 pub(super) struct EventHolder<State, Time>
 where
     State: SimState<Time>,
-    Time: SimTime,
+    Time: SimTime + Send + Sync,
 {
     pub execution_time: Time,
     pub event: Box<dyn Event<State, Time>>,
@@ -20,7 +21,7 @@ where
 impl<State, Time> PartialEq<Self> for EventHolder<State, Time>
 where
     State: SimState<Time>,
-    Time: SimTime,
+    Time: SimTime + Send + Sync,
 {
     fn eq(&self, other: &Self) -> bool {
         self.insertion_sequence == other.insertion_sequence && self.execution_time == other.execution_time
@@ -30,14 +31,14 @@ where
 impl<State, Time> Eq for EventHolder<State, Time>
 where
     State: SimState<Time>,
-    Time: SimTime,
+    Time: SimTime + Send + Sync,
 {
 }
 
 impl<State, Time> PartialOrd<Self> for EventHolder<State, Time>
 where
     State: SimState<Time>,
-    Time: SimTime,
+    Time: SimTime + Send + Sync,
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
@@ -47,7 +48,7 @@ where
 impl<State, Time> Ord for EventHolder<State, Time>
 where
     State: SimState<Time>,
-    Time: SimTime,
+    Time: SimTime + Send + Sync,
 {
     fn cmp(&self, other: &Self) -> Ordering {
         let comparison = self.execution_time.cmp(&other.execution_time);

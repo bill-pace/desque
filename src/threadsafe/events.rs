@@ -2,7 +2,7 @@ mod event_holder;
 pub(super) mod event_traits;
 
 use super::SimState;
-use crate::serial;
+use crate::generic_parameters::SimTime;
 use event_holder::EventHolder;
 use event_traits::Event;
 use std::cmp::Reverse;
@@ -11,21 +11,6 @@ use std::fmt::Debug;
 use std::ops::Add;
 use std::sync::atomic;
 use std::sync::Mutex;
-
-/// The generic type used for a simulation's clock.
-///
-/// Kept generic to support as many variations of clock as possible. This trait is a superset of [`serial::SimTime`],
-/// [`Send`], and [`Sync`] and is automatically implemented for all types that implement those traits.
-///
-/// Enabling the `ordered-float` feature on desque includes the [`OrderedFloat`] and [`NotNan`] types from the
-/// [`ordered-float`] crate in the provided implementations, just like with [`serial::SimTime`].
-///
-/// [`ordered-float`]: https://docs.rs/ordered-float/4
-/// [`OrderedFloat`]: https://docs.rs/ordered-float/4/ordered_float/struct.OrderedFloat.html
-/// [`NotNan`]: https://docs.rs/ordered-float/4/ordered_float/struct.NotNan.html
-pub trait SimTime: serial::SimTime + Send + Sync {}
-
-impl<T> SimTime for T where T: serial::SimTime + Send + Sync {}
 
 /// Priority queue of scheduled events.
 ///
@@ -73,7 +58,7 @@ impl<T> SimTime for T where T: serial::SimTime + Send + Sync {}
 pub struct EventQueue<State, Time>
 where
     State: SimState<Time>,
-    Time: SimTime,
+    Time: SimTime + Send + Sync,
 {
     events: Mutex<BinaryHeap<Reverse<EventHolder<State, Time>>>>,
     last_execution_time: Time,
@@ -85,7 +70,7 @@ where
 impl<State, Time> EventQueue<State, Time>
 where
     State: SimState<Time>,
-    Time: SimTime,
+    Time: SimTime + Send + Sync,
 {
     /// Construct a new [`EventQueue`] with no scheduled events and a clock initialized to the provided time.
     pub(crate) fn new(start_time: Time) -> Self {
@@ -231,7 +216,7 @@ where
 impl<State, Time> EventQueue<State, Time>
 where
     State: SimState<Time>,
-    Time: SimTime + Clone + Add<Output = Time>,
+    Time: SimTime + Send + Sync + Clone + Add<Output = Time>,
 {
     /// Schedule the provided event after the specified delay. The event's execution time will be equal to the result of
     /// `self.current_time().clone() + delay`.
@@ -278,7 +263,7 @@ where
 impl<State, Time> std::fmt::Display for EventQueue<State, Time>
 where
     State: SimState<Time>,
-    Time: SimTime,
+    Time: SimTime + Send + Sync,
 {
     fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(

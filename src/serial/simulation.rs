@@ -1,4 +1,5 @@
-use super::{Event, EventQueue, SimTime};
+use super::{Event, EventQueue};
+use crate::SimTime;
 
 use std::fmt::{Debug, Formatter};
 

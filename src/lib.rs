@@ -32,13 +32,14 @@
 //! [`ordered-float`]: https://docs.rs/ordered-float/4
 //! [`OrderedFloat`]: https://docs.rs/ordered-float/4/ordered_float/struct.OrderedFloat.html
 //! [`NotNan`]: https://docs.rs/ordered-float/4/ordered_float/struct.NotNan.html
-//! [`SimTime`]: serial::SimTime
 //! [`Simulation`]: serial::Simulation
 //! [`SimState`]: serial::SimState
 //! [`Event`]: serial::Event
 
 mod error;
+mod generic_parameters;
 pub mod serial;
 pub mod threadsafe;
 
-pub use crate::error::{Error, Result};
+pub use error::{Error, Result};
+pub use generic_parameters::SimTime;
