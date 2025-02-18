@@ -2,7 +2,7 @@ mod event_holder;
 pub(super) mod event_traits;
 
 use super::SimState;
-use crate::generic_parameters::SimTime;
+use crate::SimTime;
 use event_holder::EventHolder;
 use event_traits::Event;
 use std::cmp::Reverse;
