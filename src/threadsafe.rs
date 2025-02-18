@@ -14,4 +14,4 @@ mod simulation;
 
 pub use events::event_traits::{Event, OkEvent};
 pub use events::EventQueue;
-pub use simulation::{SimState, Simulation};
+pub use simulation::Simulation;

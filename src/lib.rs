@@ -42,4 +42,4 @@ pub mod serial;
 pub mod threadsafe;
 
 pub use error::{Error, Result};
-pub use generic_parameters::SimTime;
+pub use generic_parameters::{SimState, SimTime};

@@ -1,46 +1,7 @@
 use super::{Event, EventQueue};
-use crate::SimTime;
+use crate::{SimState, SimTime};
 
 use std::fmt::{Debug, Formatter};
-
-/// The generic type used for a simulation's overall state.
-///
-/// This type may include to-date summary statistics, collections of simulated entities, terrain maps, historical
-/// records of simulated events, or whatever else is necessary to describe the real-world process or phenomenon in a
-/// program.
-///
-/// This trait has only one method, which provides a way for the [`Simulation::run()`] method to ask whether it should
-/// wrap up event execution. The default implementation of this method will always answer "no," and so a simulation
-/// running with that implementation will continue until the event queue becomes empty.
-///
-/// Making this trait generic over the type used for clock time enables the [`is_complete()`] method to take a shared
-/// reference to that type with full access to any method with a `&self` receiver.
-///
-/// [`Simulation::run()`]: Simulation::run
-/// [`is_complete()`]: SimState::is_complete
-pub trait SimState<Time>
-where
-    Time: SimTime,
-{
-    /// Reports whether the simulation has run to completion. This method will be invoked in [`Simulation::run()`]
-    /// before popping each event off the queue: `true` indicates that the simulation is finished and that [`run()`]
-    /// should break out of its loop, whereas `false` means that [`run()`] should continue with the next scheduled
-    /// event.
-    ///
-    /// The default implementation always returns false, which results in the simulation continuing until the event
-    /// queue empties out.
-    ///
-    /// The `current_time` argument will provide shared access to the internally tracked simulation clock.
-    ///
-    /// [`Simulation::run()`]: Simulation::run
-    /// [`run()`]: Simulation::run
-    // expect that other implementations will make use of the
-    // argument even though this one doesn't
-    #[allow(unused_variables)]
-    fn is_complete(&self, current_time: &Time) -> bool {
-        false
-    }
-}
 
 /// Contains the event queue and other state belonging to a simulation.
 ///

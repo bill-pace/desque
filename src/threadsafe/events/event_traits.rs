@@ -1,5 +1,5 @@
-use super::{EventQueue, SimState};
-use crate::SimTime;
+use super::EventQueue;
+use crate::{SimState, SimTime};
 use std::fmt::Debug;
 
 /// A behavior or state change that occurs within a simulation.
@@ -26,7 +26,7 @@ use std::fmt::Debug;
 /// [`serial::EventQueue`]: crate::serial::EventQueue
 pub trait Event<State, Time>: Debug + Send
 where
-    State: SimState<Time>,
+    State: SimState<Time> + Sync,
     Time: SimTime + Send + Sync,
 {
     /// Update the simulation according to the specific type of event. The simulation will invoke this method during
@@ -83,7 +83,7 @@ where
 /// [`Error`]: crate::Error
 pub trait OkEvent<State, Time>: Debug + Send
 where
-    State: SimState<Time>,
+    State: SimState<Time> + Sync,
     Time: SimTime + Send + Sync,
 {
     /// Update the simulation according to the specific type of event. The simulation will invoke this method during
@@ -100,7 +100,7 @@ where
 
 impl<State, Time, OkEventType> Event<State, Time> for OkEventType
 where
-    State: SimState<Time>,
+    State: SimState<Time> + Sync,
     Time: SimTime + Send + Sync,
     OkEventType: OkEvent<State, Time>,
 {

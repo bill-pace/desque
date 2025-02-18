@@ -18,7 +18,7 @@
 //! server configuration.
 
 use desque::serial::*;
-use desque::SimTime;
+use desque::{SimState, SimTime};
 use rand::{Rng, SeedableRng};
 use rand_distr::{Distribution, Exp};
 use rand_pcg::Pcg64;

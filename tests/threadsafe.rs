@@ -1,3 +1,4 @@
+use desque::SimState;
 use desque::threadsafe::*;
 use std::sync::atomic;
 use std::thread;

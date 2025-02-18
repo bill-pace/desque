@@ -1,8 +1,7 @@
 mod event_holder;
 pub(super) mod event_traits;
 
-use super::SimState;
-use crate::SimTime;
+use crate::{SimState, SimTime};
 use event_holder::EventHolder;
 use event_traits::Event;
 use std::cmp::Reverse;
@@ -57,7 +56,7 @@ use std::sync::Mutex;
 #[derive(Debug, Default)]
 pub struct EventQueue<State, Time>
 where
-    State: SimState<Time>,
+    State: SimState<Time> + Sync,
     Time: SimTime + Send + Sync,
 {
     events: Mutex<BinaryHeap<Reverse<EventHolder<State, Time>>>>,
@@ -69,7 +68,7 @@ where
 
 impl<State, Time> EventQueue<State, Time>
 where
-    State: SimState<Time>,
+    State: SimState<Time> + Sync,
     Time: SimTime + Send + Sync,
 {
     /// Construct a new [`EventQueue`] with no scheduled events and a clock initialized to the provided time.
@@ -215,7 +214,7 @@ where
 
 impl<State, Time> EventQueue<State, Time>
 where
-    State: SimState<Time>,
+    State: SimState<Time> + Sync,
     Time: SimTime + Send + Sync + Clone + Add<Output = Time>,
 {
     /// Schedule the provided event after the specified delay. The event's execution time will be equal to the result of
@@ -262,7 +261,7 @@ where
 
 impl<State, Time> std::fmt::Display for EventQueue<State, Time>
 where
-    State: SimState<Time>,
+    State: SimState<Time> + Sync,
     Time: SimTime + Send + Sync,
 {
     fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {

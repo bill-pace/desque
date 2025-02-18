@@ -13,7 +13,7 @@
 
 use desque::serial::*;
 use desque::Result;
-use desque::SimTime;
+use desque::{SimState, SimTime};
 use rand::SeedableRng;
 use rand_distr::{Distribution, Exp};
 use rand_pcg::Pcg64;

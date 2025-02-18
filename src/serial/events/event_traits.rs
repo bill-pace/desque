@@ -1,4 +1,5 @@
-use super::{EventQueue, SimState, SimTime};
+use crate::{SimState, SimTime};
+use super::EventQueue;
 use std::fmt::Debug;
 
 /// A behavior or state change that occurs within a simulation.

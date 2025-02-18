@@ -1,8 +1,7 @@
 mod event_holder;
 pub(super) mod event_traits;
 
-use super::SimState;
-use crate::SimTime;
+use crate::{SimState, SimTime};
 use event_holder::EventHolder;
 use event_traits::Event;
 
