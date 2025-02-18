@@ -1,5 +1,5 @@
-use desque::SimState;
 use desque::threadsafe::*;
+use desque::SimState;
 use std::sync::atomic;
 use std::thread;
 

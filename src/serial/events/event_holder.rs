@@ -1,5 +1,5 @@
-use crate::{SimState, SimTime};
 use super::Event;
+use crate::{SimState, SimTime};
 use std::cmp::Ordering;
 
 /// Helper struct for the event queue. This struct holds a [`Box`] to the event itself alongside the data necessary to

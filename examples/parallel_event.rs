@@ -8,8 +8,8 @@
 //! This example showcases how the elements of desque's `threadsafe` module support multithreaded execution of a single
 //! simulation by having each "birth" take place on a new thread.
 
-use desque::SimState;
 use desque::threadsafe::*;
+use desque::SimState;
 use std::sync::atomic;
 use std::thread;
 

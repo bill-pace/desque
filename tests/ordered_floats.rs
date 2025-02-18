@@ -3,8 +3,8 @@ mod util;
 #[cfg(feature = "ordered-float")]
 mod ordered_float_tests {
     use crate::assert_floats_near_equal;
-    use desque::SimState;
     use desque::serial::*;
+    use desque::SimState;
     use ordered_float::NotNan;
     use rand::{Rng, SeedableRng};
     use rand_distr::{Distribution, Exp};
