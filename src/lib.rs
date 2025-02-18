@@ -33,7 +33,6 @@
 //! [`OrderedFloat`]: https://docs.rs/ordered-float/4/ordered_float/struct.OrderedFloat.html
 //! [`NotNan`]: https://docs.rs/ordered-float/4/ordered_float/struct.NotNan.html
 //! [`Simulation`]: serial::Simulation
-//! [`SimState`]: serial::SimState
 //! [`Event`]: serial::Event
 
 mod error;

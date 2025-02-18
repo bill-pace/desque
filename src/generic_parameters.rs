@@ -84,8 +84,8 @@ where
 {
     /// Reports whether the simulation has run to completion. This method will be invoked in
     /// [`serial::Simulation::run()`] or [`threadsafe::Simulation::run()`] before popping each event off the queue:
-    /// `true` indicates that the simulation is finished and that [`run()`] should break out of its loop, whereas
-    /// `false` means that [`run()`] should continue with the next scheduled event.
+    /// `true` indicates that the simulation is finished and that `run()` should break out of its loop, whereas
+    /// `false` means that `run()` should continue with the next scheduled event.
     ///
     /// The default implementation always returns false, which results in the simulation continuing until the event
     /// queue empties out.
@@ -94,7 +94,6 @@ where
     ///
     /// [`serial::Simulation::run()`]: crate::serial::Simulation::run
     /// [`threadsafe::Simulation::run()`]: crate::threadsafe::Simulation::run
-    /// [`run()`]: Simulation::run
     // expect that other implementations will make use of the
     // argument even though this one doesn't
     #[allow(unused_variables)]
