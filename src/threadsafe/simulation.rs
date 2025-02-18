@@ -9,7 +9,7 @@ use std::fmt::Formatter;
 ///
 /// The expected workflow for a Simulation is:
 ///
-/// 1. Initialize a struct that implements [`SimState`].
+/// 1. Initialize a struct that implements [`SimState`] and [`Sync`].
 /// 2. Pass this struct and the start time to `new()`.
 /// 3. Schedule at least one initial event.
 /// 4. Call [`run()`]. Handle any error it might return.

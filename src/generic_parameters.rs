@@ -63,30 +63,37 @@ impl<Float> SimTime for ordered_float::NotNan<Float> where Float: ordered_float:
 /// records of simulated events, or whatever else is necessary to describe the real-world process or phenomenon in a
 /// program.
 ///
-/// This trait has only one method, which provides a way for the [`Simulation::run()`] method to ask whether it should
-/// wrap up event execution. The default implementation of this method will always answer "no," and so a simulation
-/// running with that implementation will continue until the event queue becomes empty.
+/// This trait has only one method, which provides a way for the [`serial::Simulation::run()`] and
+/// [`threadsafe::Simulation::run()`] methods to ask whether they should wrap up event execution. The default
+/// implementation of this method will always answer "no," and so a simulation running with the default will continue
+/// until the event queue becomes empty.
 ///
 /// Making this trait generic over the type used for clock time enables the [`is_complete()`] method to take a shared
 /// reference to that type with full access to any method with a `&self` receiver.
 ///
-/// [`Simulation::run()`]: Simulation::run
+/// To use your implementor with a [`threadsafe::Simulation`], it must also implement [`Sync`]. desque does not require
+/// your implementor to be [`Send`], but if it is then [`threadsafe::Simulation`] will also be [`Send`].
+///
+/// [`serial::Simulation::run()`]: crate::serial::Simulation::run
+/// [`threadsafe::Simulation`]: crate::threadsafe::Simulation
+/// [`threadsafe::Simulation::run()`]: crate::threadsafe::Simulation::run
 /// [`is_complete()`]: SimState::is_complete
 pub trait SimState<Time>
 where
     Time: SimTime,
 {
-    /// Reports whether the simulation has run to completion. This method will be invoked in [`Simulation::run()`]
-    /// before popping each event off the queue: `true` indicates that the simulation is finished and that [`run()`]
-    /// should break out of its loop, whereas `false` means that [`run()`] should continue with the next scheduled
-    /// event.
+    /// Reports whether the simulation has run to completion. This method will be invoked in
+    /// [`serial::Simulation::run()`] or [`threadsafe::Simulation::run()`] before popping each event off the queue:
+    /// `true` indicates that the simulation is finished and that [`run()`] should break out of its loop, whereas
+    /// `false` means that [`run()`] should continue with the next scheduled event.
     ///
     /// The default implementation always returns false, which results in the simulation continuing until the event
     /// queue empties out.
     ///
     /// The `current_time` argument will provide shared access to the internally tracked simulation clock.
     ///
-    /// [`Simulation::run()`]: Simulation::run
+    /// [`serial::Simulation::run()`]: crate::serial::Simulation::run
+    /// [`threadsafe::Simulation::run()`]: crate::threadsafe::Simulation::run
     /// [`run()`]: Simulation::run
     // expect that other implementations will make use of the
     // argument even though this one doesn't
