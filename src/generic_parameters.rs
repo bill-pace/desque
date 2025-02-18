@@ -8,7 +8,10 @@ use std::fmt::Debug;
 /// Your implementation of this trait should use the [`Ord`] trait to account for not only the overall sequencing of
 /// events, but also any tie breaking that may be necessary in your use case. Note that events will be executed in
 /// ascending order of execution time, i.e. if `A.cmp(&B) == std::cmp::Ordering::Less` then event A will execute before
-/// event B.
+/// event B. Ties that you don't specify how to break will be resolved by the order in which events are enqueued, which
+/// should help provide some stability in a [`serial::Simulation`]. In a [`threadsafe::Simulation`], however, this
+/// tiebreaking scheme may be subject to benign race conditions, depending on how your use case takes advantage of
+/// parallelization.
 ///
 /// [`Debug`] is necessary for the implementation of Debug on both [`serial::EventQueue`] and
 /// [`threadsafe::EventQueue`].
@@ -25,9 +28,11 @@ use std::fmt::Debug;
 /// satisfy the additional requirement on `SimTime`.
 ///
 /// [`serial::EventQueue`]: crate::serial::EventQueue
+/// [`serial::Simulation`]: crate::serial::Simulation
 /// [`threadsafe::EventQueue`]: crate::threadsafe::EventQueue
 /// [`threadsafe::EventQueue::current_time()`]: crate::threadsafe::EventQueue::current_time
 /// [`threadsafe::EventQueue::schedule()`]: crate::threadsafe::EventQueue::schedule
+/// [`threadsafe::Simulation`]: crate::threadsafe::Simulation
 /// [`ordered-float`]: https://docs.rs/ordered-float/4
 /// [`OrderedFloat`]: https://docs.rs/ordered-float/4/ordered_float/struct.OrderedFloat.html
 /// [`NotNan`]: https://docs.rs/ordered-float/4/ordered_float/struct.NotNan.html
