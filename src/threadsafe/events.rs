@@ -225,6 +225,8 @@ where
     /// If the result of calling [`Clone::clone`] on the current sim time results in a new value that is somehow less
     /// than the current sim time, this method will return an [`Error::BackInTime`]. Note that such behavior is not
     /// expected from implementations of [`Clone::clone`] in most cases.
+    ///
+    /// [`Error::BackInTime`]: crate::Error::BackInTime
     pub fn schedule_now<EventType>(&self, event: EventType) -> crate::Result
     where
         EventType: Event<State, Time> + 'static,
@@ -257,6 +259,8 @@ where
     /// If the result of calling [`Clone::clone`] on the current sim time results in a new value that is somehow less
     /// than the current sim time, this method will return an [`Error::BackInTime`]. Note that such behavior is not
     /// expected from implementations of [`Clone::clone`] in most cases.
+    ///
+    /// [`Error::BackInTime`]: crate::Error::BackInTime
     pub fn schedule_now_from_boxed(&self, event: Box<dyn Event<State, Time>>) -> crate::Result {
         let event_time = self.last_execution_time.clone();
         self.schedule_from_boxed(event, event_time)
