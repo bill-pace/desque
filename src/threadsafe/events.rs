@@ -215,6 +215,41 @@ where
 impl<State, Time> EventQueue<State, Time>
 where
     State: SimState<Time> + Sync,
+    Time: SimTime + Send + Sync + Clone,
+{
+    /// Schedule the provided event to execute at the current sim time. Events previously scheduled for "now" will still
+    /// execute before this event does.
+    ///
+    /// # Errors
+    ///
+    /// If the result of calling [`Clone::clone`] on the current sim time results in a new value that is somehow less
+    /// than the current sim time, this method will return an [`Error::BackInTime`]. Note that such behavior is not
+    /// expected from implementations of [`Clone::clone`] in most cases.
+    pub fn schedule_now<EventType>(&self, event: EventType) -> crate::Result
+    where
+        EventType: Event<State, Time> + 'static,
+    {
+        let event_time = self.last_execution_time.clone();
+        self.schedule(event, event_time)
+    }
+
+    /// Schedule the provided event to execute at the current sim time. Events previously scheduled for "now" will still
+    /// execute before this event does.
+    ///
+    /// # Errors
+    ///
+    /// If the result of calling [`Clone::clone`] on the current sim time results in a new value that is somehow less
+    /// than the current sim time, this method will return an [`Error::BackInTime`]. Note that such behavior is not
+    /// expected from implementations of [`Clone::clone`] in most cases.
+    pub fn schedule_now_from_boxed(&self, event: Box<dyn Event<State, Time>>) -> crate::Result {
+        let event_time = self.last_execution_time.clone();
+        self.schedule_from_boxed(event, event_time)
+    }
+}
+
+impl<State, Time> EventQueue<State, Time>
+where
+    State: SimState<Time> + Sync,
     Time: SimTime + Send + Sync + Clone + Add<Output = Time>,
 {
     /// Schedule the provided event after the specified delay. The event's execution time will be equal to the result of
@@ -366,5 +401,55 @@ mod tests {
             expected, state.executed_event_values,
             "events executed out of insertion sequence"
         )
+    }
+
+    #[test]
+    fn delay_schedulers_choose_expected_times() {
+        let mut state = State {
+            executed_event_values: Vec::with_capacity(3),
+        };
+        let mut queue = EventQueue::new(0);
+        queue.schedule(TestEvent { value: 1 }, 1).unwrap();
+        queue.schedule(TestEvent { value: 2 }, 3).unwrap();
+
+        let mut first_event = queue.next().expect("should be able to pop scheduled event");
+        first_event
+            .execute(&mut state, &mut queue)
+            .expect("event should execute normally");
+        assert_eq!(1, *queue.current_time(), "queue should be at time of last popped event");
+        assert_eq!(
+            vec![1],
+            state.executed_event_values,
+            "state should match first executed event"
+        );
+
+        queue
+            .schedule_now(TestEvent { value: 3 })
+            .expect("should be able to schedule new event");
+        queue
+            .schedule_with_delay(TestEvent { value: 4 }, 1)
+            .expect("should be able to schedule new event");
+
+        let mut next_event = queue.next().expect("should be able to pop scheduled event");
+        next_event
+            .execute(&mut state, &mut queue)
+            .expect("event should execute normally");
+        assert_eq!(1, *queue.current_time(), "queue should be at time of last popped event");
+        assert_eq!(
+            vec![1, 3],
+            state.executed_event_values,
+            "state should match first executed event"
+        );
+
+        next_event = queue.next().expect("should be able to pop scheduled event");
+        next_event
+            .execute(&mut state, &mut queue)
+            .expect("event should execute normally");
+        assert_eq!(2, *queue.current_time(), "queue should be at time of last popped event");
+        assert_eq!(
+            vec![1, 3, 4],
+            state.executed_event_values,
+            "state should match first executed event"
+        );
     }
 }
