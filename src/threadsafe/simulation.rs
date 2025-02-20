@@ -1,6 +1,7 @@
 use super::{Event, EventQueue};
 use crate::{SimState, SimTime};
 use std::fmt::Formatter;
+use std::ops::Add;
 
 /// Contains the event queue and other state belonging to a simulation.
 ///
@@ -106,7 +107,13 @@ where
     /// If `time` is less than the current clock time on `self`, returns a [`Error::BackInTime`] to indicate the likely
     /// presence of a logical bug at the call site, with no modifications to the queue.
     ///
+    /// # Panics
+    ///
+    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
+    /// poisoned, this method will panic.
+    ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
+    /// [`Mutex`]: std::sync::Mutex
     pub fn schedule<EventType>(&self, event: EventType, time: Time) -> crate::Result
     where
         EventType: Event<State, Time> + 'static,
@@ -123,6 +130,13 @@ where
     /// a logical bug in client code. Generally, this method should only be invoked if the condition `time >= clock` is
     /// already enforced at the call site through some other means. For example, adding a strictly positive offset to
     /// the current clock time to get the `time` argument for the call.
+    ///
+    /// # Panics
+    ///
+    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
+    /// poisoned, this method will panic.
+    ///
+    /// [`Mutex`]: std::sync::Mutex
     pub unsafe fn schedule_unchecked<EventType>(&self, event: EventType, time: Time)
     where
         EventType: Event<State, Time> + 'static,
@@ -137,7 +151,13 @@ where
     /// If `time` is less than the current clock time on `self`, returns a [`Error::BackInTime`] to indicate the likely
     /// presence of a logical bug at the call site, with no modifications to the queue.
     ///
+    /// # Panics
+    ///
+    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
+    /// poisoned, this method will panic.
+    ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
+    /// [`Mutex`]: std::sync::Mutex
     pub fn schedule_from_boxed(&self, event: Box<dyn Event<State, Time>>, time: Time) -> crate::Result {
         self.event_queue.schedule_from_boxed(event, time)
     }
@@ -151,6 +171,13 @@ where
     /// a logical bug in client code. Generally, this method should only be invoked if the condition `time >= clock` is
     /// already enforced at the call site through some other means. For example, adding a strictly positive offset to
     /// the current clock time to get the `time` argument for the call.
+    ///
+    /// # Panics
+    ///
+    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
+    /// poisoned, this method will panic.
+    ///
+    /// [`Mutex`]: std::sync::Mutex
     pub unsafe fn schedule_unchecked_from_boxed(&self, event: Box<dyn Event<State, Time>>, time: Time) {
         self.event_queue.schedule_unchecked_from_boxed(event, time);
     }
@@ -173,6 +200,188 @@ where
     /// Get an exclusive reference to the event queue.
     pub fn event_queue_mut(&mut self) -> &mut EventQueue<State, Time> {
         &mut self.event_queue
+    }
+}
+
+impl<State, Time> Simulation<State, Time>
+where
+    State: SimState<Time> + Sync,
+    Time: SimTime + Send + Sync + Clone,
+{
+    /// Schedule the provided event to execute at the current sim time. Events previously scheduled for "now" will still
+    /// execute before this event does.
+    ///
+    /// # Errors
+    ///
+    /// If the result of calling [`Clone::clone`] on the current sim time results in a new value that is somehow less
+    /// than the current sim time, this method will return an [`Error::BackInTime`]. Note that such behavior is not
+    /// expected from implementations of [`Clone::clone`] in most cases.
+    ///
+    /// # Panics
+    ///
+    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
+    /// poisoned, this method will panic.
+    ///
+    /// [`Error::BackInTime`]: crate::Error::BackInTime
+    /// [`Mutex`]: std::sync::Mutex
+    pub fn schedule_now<EventType>(&self, event: EventType) -> crate::Result
+    where
+        EventType: Event<State, Time> + 'static,
+    {
+        self.event_queue.schedule_now(event)
+    }
+
+    /// Schedule the provided event to execute at the current sim time. Events previously scheduled for "now" will still
+    /// execute before this event does.
+    ///
+    /// # Safety
+    ///
+    /// This method cannot directly trigger undefined behaviors, but relies on client implementations of
+    /// [`Clone::clone`] producing new values of [`SimTime`] that are not less than the cloned receiver (i.e. the
+    /// current simulation time). If `my_sim_time.clone().cmp(my_sim_time) != Ordering::Less` is always true for your
+    /// chosen type, this method will be safe to call.
+    ///
+    /// # Panics
+    ///
+    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
+    /// poisoned, this method will panic.
+    ///
+    /// [`Mutex`]: std::sync::Mutex
+    pub unsafe fn schedule_now_unchecked<EventType>(&self, event: EventType)
+    where
+        EventType: Event<State, Time> + 'static,
+    {
+        self.event_queue.schedule_now_unchecked(event);
+    }
+
+    /// Schedule the provided event to execute at the current sim time. Events previously scheduled for "now" will still
+    /// execute before this event does.
+    ///
+    /// # Errors
+    ///
+    /// If the result of calling [`Clone::clone`] on the current sim time results in a new value that is somehow less
+    /// than the current sim time, this method will return an [`Error::BackInTime`]. Note that such behavior is not
+    /// expected from implementations of [`Clone::clone`] in most cases.
+    ///
+    /// # Panics
+    ///
+    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
+    /// poisoned, this method will panic.
+    ///
+    /// [`Error::BackInTime`]: crate::Error::BackInTime
+    /// [`Mutex`]: std::sync::Mutex
+    pub fn schedule_now_from_boxed(&self, event: Box<dyn Event<State, Time>>) -> crate::Result {
+        self.event_queue.schedule_now_from_boxed(event)
+    }
+
+    /// Schedule the provided event to execute at the current sim time. Events previously scheduled for "now" will still
+    /// execute before this event does.
+    ///
+    /// # Safety
+    ///
+    /// This method cannot directly trigger undefined behaviors, but relies on client implementations of
+    /// [`Clone::clone`] producing new values of [`SimTime`] that are not less than the cloned receiver (i.e. the
+    /// current simulation time). If `my_sim_time.clone().cmp(my_sim_time) != Ordering::Less` is always true for your
+    /// chosen type, this method will be safe to call.
+    ///
+    /// # Panics
+    ///
+    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
+    /// poisoned, this method will panic.
+    ///
+    /// [`Mutex`]: std::sync::Mutex
+    pub unsafe fn schedule_now_unchecked_from_boxed(&self, event: Box<dyn Event<State, Time>>) {
+        self.event_queue.schedule_now_unchecked_from_boxed(event);
+    }
+}
+
+impl<State, Time> Simulation<State, Time>
+where
+    State: SimState<Time> + Sync,
+    Time: SimTime + Send + Sync + Clone + Add<Output = Time>,
+{
+    /// Schedule the provided event after the specified delay. The event's execution time will be equal to the result of
+    /// `self.current_time().clone() + delay`.
+    ///
+    /// # Errors
+    ///
+    /// If the calculated execution time is less than the current clock time on `self`, returns an [`Error::BackInTime`]
+    /// to indicate the likely presence of a logical bug at the call site, with no modifications to the queue.
+    ///
+    /// # Panics
+    ///
+    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
+    /// poisoned, this method will panic.
+    ///
+    /// [`Error::BackInTime`]: crate::Error::BackInTime
+    /// [`Mutex`]: std::sync::Mutex
+    pub fn schedule_with_delay<EventType>(&self, event: EventType, delay: Time) -> crate::Result
+    where
+        EventType: Event<State, Time> + 'static,
+    {
+        self.event_queue.schedule_with_delay(event, delay)
+    }
+
+    /// Schedule the provided event after the specified delay. The event's execution time will be equal to the result of
+    /// `self.current_time().clone() + delay`.
+    ///
+    /// # Safety
+    ///
+    /// This method cannot directly trigger undefined behaviors, but relies on the provided `delay` being "nonnegative;"
+    /// in other words that `self.current_time().cmp(self.current_time() + delay) != Ordering::Greater` should always be
+    /// true. If you are certain that is true for your type, this method will be safe to call. Alternatively, you may
+    /// call this method to intentionally schedule an event in the past if your use case truly calls for that.
+    ///
+    /// # Panics
+    ///
+    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
+    /// poisoned, this method will panic.
+    ///
+    /// [`Mutex`]: std::sync::Mutex
+    pub unsafe fn schedule_with_delay_unchecked<EventType>(&self, event: EventType, delay: Time)
+    where
+        EventType: Event<State, Time> + 'static,
+    {
+        self.event_queue.schedule_with_delay_unchecked(event, delay);
+    }
+
+    /// Schedule the provided event after the specified delay. The event's execution time will be equal to the result of
+    /// `self.current_time().clone() + delay`.
+    ///
+    /// # Errors
+    ///
+    /// If the calculated execution time is less than the current clock time on `self`, returns an [`Error::BackInTime`]
+    /// to indicate the likely presence of a logical bug at the call site, with no modifications to the queue.
+    ///
+    /// # Panics
+    ///
+    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
+    /// poisoned, this method will panic.
+    ///
+    /// [`Error::BackInTime`]: crate::Error::BackInTime
+    /// [`Mutex`]: std::sync::Mutex
+    pub fn schedule_with_delay_from_boxed(&self, event: Box<dyn Event<State, Time>>, delay: Time) -> crate::Result {
+        self.event_queue.schedule_with_delay_from_boxed(event, delay)
+    }
+
+    /// Schedule the provided event after the specified delay. The event's execution time will be equal to the result of
+    /// `self.current_time().clone() + delay`.
+    ///
+    /// # Safety
+    ///
+    /// This method cannot directly trigger undefined behaviors, but relies on the provided `delay` being "nonnegative;"
+    /// in other words that `self.current_time().cmp(self.current_time() + delay) != Ordering::Greater` should always be
+    /// true. If you are certain that is true for your type, this method will be safe to call. Alternatively, you may
+    /// call this method to intentionally schedule an event in the past if your use case truly calls for that.
+    ///
+    /// # Panics
+    ///
+    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
+    /// poisoned, this method will panic.
+    ///
+    /// [`Mutex`]: std::sync::Mutex
+    pub unsafe fn schedule_with_delay_unchecked_from_boxed(&self, event: Box<dyn Event<State, Time>>, delay: Time) {
+        self.event_queue.schedule_with_delay_unchecked_from_boxed(event, delay);
     }
 }
 

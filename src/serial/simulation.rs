@@ -2,6 +2,7 @@ use super::{Event, EventQueue};
 use crate::{SimState, SimTime};
 
 use std::fmt::{Debug, Formatter};
+use std::ops::Add;
 
 /// Contains the event queue and other state belonging to a simulation.
 ///
@@ -170,6 +171,136 @@ where
     /// Get an exclusive reference to the event queue.
     pub fn event_queue_mut(&mut self) -> &mut EventQueue<State, Time> {
         &mut self.event_queue
+    }
+}
+
+impl<State, Time> Simulation<State, Time>
+where
+    State: SimState<Time>,
+    Time: SimTime + Clone,
+{
+    /// Schedule the provided event to execute at the current sim time. Events previously scheduled for "now" will still
+    /// execute before this event does.
+    ///
+    /// # Errors
+    ///
+    /// If the result of calling [`Clone::clone`] on the current sim time results in a new value that is somehow less
+    /// than the current sim time, this method will return an [`Error::BackInTime`]. Note that such behavior is not
+    /// expected from implementations of [`Clone::clone`] in most cases.
+    ///
+    /// [`Error::BackInTime`]: crate::Error::BackInTime
+    pub fn schedule_now<EventType>(&mut self, event: EventType) -> crate::Result
+    where
+        EventType: Event<State, Time> + 'static,
+    {
+        self.event_queue.schedule_now(event)
+    }
+
+    /// Schedule the provided event to execute at the current sim time. Events previously scheduled for "now" will still
+    /// execute before this event does.
+    ///
+    /// # Safety
+    ///
+    /// This method cannot directly trigger undefined behaviors, but relies on client implementations of
+    /// [`Clone::clone`] producing new values of [`SimTime`] that are not less than the cloned receiver (i.e. the
+    /// current simulation time). If `my_sim_time.clone().cmp(my_sim_time) != Ordering::Less` is always true for your
+    /// chosen type, this method will be safe to call.
+    pub unsafe fn schedule_now_unchecked<EventType>(&mut self, event: EventType)
+    where
+        EventType: Event<State, Time> + 'static,
+    {
+        self.event_queue.schedule_now_unchecked(event);
+    }
+
+    /// Schedule the provided event to execute at the current sim time. Events previously scheduled for "now" will still
+    /// execute before this event does.
+    ///
+    /// # Errors
+    ///
+    /// If the result of calling [`Clone::clone`] on the current sim time results in a new value that is somehow less
+    /// than the current sim time, this method will return an [`Error::BackInTime`]. Note that such behavior is not
+    /// expected from implementations of [`Clone::clone`] in most cases.
+    ///
+    /// [`Error::BackInTime`]: crate::Error::BackInTime
+    pub fn schedule_now_from_boxed(&mut self, event: Box<dyn Event<State, Time>>) -> crate::Result {
+        self.event_queue.schedule_now_from_boxed(event)
+    }
+
+    /// Schedule the provided event to execute at the current sim time. Events previously scheduled for "now" will still
+    /// execute before this event does.
+    ///
+    /// # Safety
+    ///
+    /// This method cannot directly trigger undefined behaviors, but relies on client implementations of
+    /// [`Clone::clone`] producing new values of [`SimTime`] that are not less than the cloned receiver (i.e. the
+    /// current simulation time). If `my_sim_time.clone().cmp(my_sim_time) != Ordering::Less` is always true for your
+    /// chosen type, this method will be safe to call.
+    pub unsafe fn schedule_now_unchecked_from_boxed(&mut self, event: Box<dyn Event<State, Time>>) {
+        self.event_queue.schedule_now_unchecked_from_boxed(event);
+    }
+}
+
+impl<State, Time> Simulation<State, Time>
+where
+    State: SimState<Time>,
+    Time: SimTime + Clone + Add<Output = Time>,
+{
+    /// Schedule the provided event after the specified delay. The event's execution time will be equal to the result of
+    /// `self.current_time().clone() + delay`.
+    ///
+    /// # Errors
+    ///
+    /// If the calculated execution time is less than the current clock time on `self`, returns an [`Error::BackInTime`]
+    /// to indicate the likely presence of a logical bug at the call site, with no modifications to the queue.
+    ///
+    /// [`Error::BackInTime`]: crate::Error::BackInTime
+    pub fn schedule_with_delay<EventType>(&mut self, event: EventType, delay: Time) -> crate::Result
+    where
+        EventType: Event<State, Time> + 'static,
+    {
+        self.event_queue.schedule_with_delay(event, delay)
+    }
+
+    /// Schedule the provided event after the specified delay. The event's execution time will be equal to the result of
+    /// `self.current_time().clone() + delay`.
+    ///
+    /// # Safety
+    ///
+    /// This method cannot directly trigger undefined behaviors, but relies on the provided `delay` being "nonnegative;"
+    /// in other words that `self.current_time().cmp(self.current_time() + delay) != Ordering::Greater` should always be
+    /// true. If you are certain that is true for your type, this method will be safe to call. Alternatively, you may
+    /// call this method to intentionally schedule an event in the past if your use case truly calls for that.
+    pub unsafe fn schedule_with_delay_unchecked<EventType>(&mut self, event: EventType, delay: Time)
+    where
+        EventType: Event<State, Time> + 'static,
+    {
+        self.event_queue.schedule_with_delay_unchecked(event, delay);
+    }
+
+    /// Schedule the provided event after the specified delay. The event's execution time will be equal to the result of
+    /// `self.current_time().clone() + delay`.
+    ///
+    /// # Errors
+    ///
+    /// If the calculated execution time is less than the current clock time on `self`, returns an [`Error::BackInTime`]
+    /// to indicate the likely presence of a logical bug at the call site, with no modifications to the queue.
+    ///
+    /// [`Error::BackInTime`]: crate::Error::BackInTime
+    pub fn schedule_with_delay_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, delay: Time) -> crate::Result {
+        self.event_queue.schedule_with_delay_from_boxed(event, delay)
+    }
+
+    /// Schedule the provided event after the specified delay. The event's execution time will be equal to the result of
+    /// `self.current_time().clone() + delay`.
+    ///
+    /// # Safety
+    ///
+    /// This method cannot directly trigger undefined behaviors, but relies on the provided `delay` being "nonnegative;"
+    /// in other words that `self.current_time().cmp(self.current_time() + delay) != Ordering::Greater` should always be
+    /// true. If you are certain that is true for your type, this method will be safe to call. Alternatively, you may
+    /// call this method to intentionally schedule an event in the past if your use case truly calls for that.
+    pub unsafe fn schedule_with_delay_unchecked_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, delay: Time) {
+        self.event_queue.schedule_with_delay_unchecked_from_boxed(event, delay);
     }
 }
 

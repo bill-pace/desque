@@ -226,6 +226,11 @@ where
     /// than the current sim time, this method will return an [`Error::BackInTime`]. Note that such behavior is not
     /// expected from implementations of [`Clone::clone`] in most cases.
     ///
+    /// # Panics
+    ///
+    /// If the [`Mutex`] protecting the underlying priority queue implementation has been poisoned by another thread
+    /// panicking while it is locked, this method will also panic.
+    ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     pub fn schedule_now<EventType>(&self, event: EventType) -> crate::Result
     where
@@ -244,6 +249,11 @@ where
     /// [`Clone::clone`] producing new values of [`SimTime`] that are not less than the cloned receiver (i.e. the
     /// current simulation time). If `my_sim_time.clone().cmp(my_sim_time) != Ordering::Less` is always true for your
     /// chosen type, this method will be safe to call.
+    ///
+    /// # Panics
+    ///
+    /// If the [`Mutex`] protecting the underlying priority queue implementation has been poisoned by another thread
+    /// panicking while it is locked, this method will also panic.
     pub unsafe fn schedule_now_unchecked<EventType>(&self, event: EventType)
     where
         EventType: Event<State, Time> + 'static,
@@ -260,6 +270,11 @@ where
     /// than the current sim time, this method will return an [`Error::BackInTime`]. Note that such behavior is not
     /// expected from implementations of [`Clone::clone`] in most cases.
     ///
+    /// # Panics
+    ///
+    /// If the [`Mutex`] protecting the underlying priority queue implementation has been poisoned by another thread
+    /// panicking while it is locked, this method will also panic.
+    ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     pub fn schedule_now_from_boxed(&self, event: Box<dyn Event<State, Time>>) -> crate::Result {
         let event_time = self.last_execution_time.clone();
@@ -275,6 +290,11 @@ where
     /// [`Clone::clone`] producing new values of [`SimTime`] that are not less than the cloned receiver (i.e. the
     /// current simulation time). If `my_sim_time.clone().cmp(my_sim_time) != Ordering::Less` is always true for your
     /// chosen type, this method will be safe to call.
+    ///
+    /// # Panics
+    ///
+    /// If the [`Mutex`] protecting the underlying priority queue implementation has been poisoned by another thread
+    /// panicking while it is locked, this method will also panic.
     pub unsafe fn schedule_now_unchecked_from_boxed(&self, event: Box<dyn Event<State, Time>>) {
         self.schedule_unchecked_from_boxed(event, self.last_execution_time.clone());
     }
@@ -316,6 +336,11 @@ where
     /// in other words that `self.current_time().cmp(self.current_time() + delay) != Ordering::Greater` should always be
     /// true. If you are certain that is true for your type, this method will be safe to call. Alternatively, you may
     /// call this method to intentionally schedule an event in the past if your use case truly calls for that.
+    ///
+    /// # Panics
+    ///
+    /// If the [`Mutex`] protecting the underlying priority queue implementation has been poisoned by another thread
+    /// panicking while it is locked, this method will also panic.
     pub unsafe fn schedule_with_delay_unchecked<EventType>(&self, event: EventType, delay: Time)
     where
         EventType: Event<State, Time> + 'static,
@@ -352,6 +377,11 @@ where
     /// in other words that `self.current_time().cmp(self.current_time() + delay) != Ordering::Greater` should always be
     /// true. If you are certain that is true for your type, this method will be safe to call. Alternatively, you may
     /// call this method to intentionally schedule an event in the past if your use case truly calls for that.
+    ///
+    /// # Panics
+    ///
+    /// If the [`Mutex`] protecting the underlying priority queue implementation has been poisoned by another thread
+    /// panicking while it is locked, this method will also panic.
     pub unsafe fn schedule_with_delay_unchecked_from_boxed(&self, event: Box<dyn Event<State, Time>>, delay: Time) {
         let event_time = self.last_execution_time.clone() + delay;
         self.schedule_unchecked_from_boxed(event, event_time);
