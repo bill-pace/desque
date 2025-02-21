@@ -31,24 +31,23 @@ where
     Time: SimTime + Send + Sync,
 {
     /// Update the simulation according to the specific type of event. The simulation will invoke this method during
-    /// [`Simulation::run()`] for each scheduled event in sequence. Exclusive access will be provided to both the
-    /// simulation's current state and the event queue, allowing for both mutation of the simulation's state and
+    /// [`Simulation::run()`] for each scheduled event in sequence. Exclusive access is provided to the simulation while
+    /// executing an event, allowing for both mutation of the simulation's state and
     /// scheduling of new events.
     ///
     /// This trait expects implementations of [`execute()`] to be fallible, and [`Simulation::run()`] will bubble any
-    /// errors back up to the client as a [`Error::BadExecution`]. Successful branches, as well as infallible
+    /// errors back up to the client as an [`Error::BadExecution`]. Successful branches, as well as infallible
     /// implementations, should simply return `Ok(())` to indicate to [`Simulation::run()`] that it may continue popping
     /// events from the queue.
     ///
-    /// Note that the simulation's clock time, accessible on the `event_queue` parameter, will update before invoking
-    /// this method.
+    /// Note that the simulation's clock time will update before invoking this method.
     ///
     /// # Synchronization
     ///
     /// All parameters on this method are exclusive references as a promise that only one event will execute at a time,
-    /// and that event will have full access to the simulation's state and event queue. Shared references can be
-    /// re-borrowed as necessary for any threads spawned in the course of execution. All spawned threads should be
-    /// joined before this method returns, however.
+    /// and the executing event will have full access to the simulation's state and internal event queue. Shared
+    /// references can be re-borrowed as necessary for any threads spawned in the course of execution. All spawned
+    /// threads should be joined before this method returns, however.
     ///
     /// # Errors
     ///
@@ -76,7 +75,7 @@ where
 ///
 /// As with the requirement on [`Event`], implementing [`Debug`] enables a [`Simulation`] to print all of its contents
 /// when client code deems it necessary. [`Send`] is similarly required for the promise that these events can be
-/// enqueued from any thread.
+/// enqueued from any thread. [`Sync`] is not required as desque does not itself share events across threads.
 ///
 /// [`execute()`]: OkEvent::execute
 /// [`Event::execute()`]: Event::execute
@@ -88,12 +87,10 @@ where
     Time: SimTime + Send + Sync,
 {
     /// Update the simulation according to the specific type of event. The simulation will invoke this method during
-    /// [`Simulation::run()`] for each scheduled event in sequence. Exclusive access will be provided to both the
-    /// simulation's current state and the event queue, allowing for both mutation of the simulation's state and
-    /// scheduling of new events.
+    /// [`Simulation::run()`] for each scheduled event in sequence. Exclusive access is provided to the simulation while
+    /// executing an event, allowing for both mutation of the simulation's state and scheduling of new events.
     ///
-    /// Note that the simulation's clock time, accessible on the `event_queue` parameter, will update before invoking
-    /// this method.
+    /// Note that the simulation's clock time will update before invoking this method.
     ///
     /// [`Simulation::run()`]: Simulation::run
     fn execute(&mut self, simulation: &mut Simulation<State, Time>);

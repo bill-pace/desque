@@ -57,7 +57,7 @@ where
 /// # Safety
 ///
 /// The safe methods provided for scheduling new events will compare the desired execution time against the current
-/// clock time. Attempting to schedule an event for a time that is already past will result in a [`Error::BackInTime`]
+/// clock time. Attempting to schedule an event for a time that is already past will result in an [`Error::BackInTime`]
 /// without modifying the queue. This error indicates that client code probably has a logical error, as rewinding the
 /// clock in a discrete-event simulation should be very rare.
 ///

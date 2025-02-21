@@ -20,17 +20,15 @@ where
     Time: SimTime,
 {
     /// Update the simulation according to the specific type of event. The simulation will invoke this method during
-    /// [`Simulation::run()`] for each scheduled event in sequence. Exclusive access will be provided to both the
-    /// simulation's current state and the event queue, allowing for both mutation of the simulation's state and
-    /// scheduling of new events.
+    /// [`Simulation::run()`] for each scheduled event in sequence. Exclusive access is provided to the simulation while
+    /// executing an event, allowing for both mutation of the simulation's state and scheduling of new events.
     ///
     /// This trait expects implementations of [`execute()`] to be fallible, and [`Simulation::run()`] will bubble any
-    /// errors back up to the client as a [`Error::BadExecution`]. Successful branches, as well as infallible
+    /// errors back up to the client as an [`Error::BadExecution`]. Successful branches, as well as infallible
     /// implementations, should simply return `Ok(())` to indicate to [`Simulation::run()`] that it may continue popping
     /// events from the queue.
     ///
-    /// Note that the simulation's clock time, accessible on the `event_queue` parameter, will update before invoking
-    /// this method.
+    /// Note that the simulation's clock time will update before invoking this method.
     ///
     /// # Errors
     ///
@@ -69,12 +67,10 @@ where
     Time: SimTime,
 {
     /// Update the simulation according to the specific type of event. The simulation will invoke this method during
-    /// [`Simulation::run()`] for each scheduled event in sequence. Exclusive access will be provided to both the
-    /// simulation's current state and the event queue, allowing for both mutation of the simulation's state and
-    /// scheduling of new events.
+    /// [`Simulation::run()`] for each scheduled event in sequence. Exclusive access is provided to the simulation
+    /// while executing an event, allowing for both mutation of the simulation's state and scheduling of new events.
     ///
-    /// Note that the simulation's clock time, accessible on the `event_queue` parameter, will update before invoking
-    /// this method.
+    /// Note that the simulation's clock time will update before invoking this method.
     ///
     /// [`Simulation::run()`]: Simulation::run
     fn execute(&mut self, simulation: &mut Simulation<State, Time>);

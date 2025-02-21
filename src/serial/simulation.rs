@@ -7,9 +7,10 @@ use std::ops::Add;
 
 /// Contains the event queue and other state belonging to a simulation.
 ///
-/// The defining struct for a discrete-event simulation in desque. A [`Simulation`] owns both its state and its event
-/// queue, providing both shared and mutable access to each so clients can set up and tear down instances as needed -
-/// for example, scheduling initial events or writing the final state to output.
+/// The defining struct for a discrete-event simulation in desque. A [`Simulation`] owns both its client-provided state
+/// and its internal event queue, alongside the authoritative current simulation time. The simulation provides both
+/// shared and mutable access to the client-provided state, shared access to the current time, and a variety of methods
+/// to schedule new events on the internal queue.
 ///
 /// The expected workflow for a Simulation is:
 ///
@@ -19,8 +20,8 @@ use std::ops::Add;
 /// 4. Call [`run()`]. Handle any error it might return.
 /// 5. Use the [`state()`] or [`state_mut()`] accessors to finish processing the results.
 ///
-/// A [`Simulation`] also provides the same event-scheduling interface as its underlying queue for the purpose of making
-/// step 3 slightly simpler.
+/// > Note: in the implementation of [`Debug`], scheduled events will be printed in an arbitrary order and the number of
+/// > `total_events_scheduled` is over the entirety of the simulation run, as opposed to the number currently in queue.
 ///
 /// [`new()`]: Simulation::new
 /// [`run()`]: Simulation::run
@@ -45,8 +46,8 @@ where
     State: SimState<Time>,
     Time: SimTime,
 {
-    /// Initialize a Simulation instance with the provided starting state and an event queue with clock set to the
-    /// provided starting time.
+    /// Initialize a Simulation instance with the provided starting state and an empty event queue, with clock set to
+    /// the provided starting time.
     pub fn new(initial_state: State, start_time: Time) -> Self {
         Self {
             event_queue: EventQueue::new(),
@@ -61,9 +62,8 @@ where
     ///
     /// 1. Does [`state.is_complete()`] return true? If so, return `Ok(())`.
     /// 2. Attempt to pop the next event from the queue. If there isn't one, return `Ok(())`.
-    /// 3. Pass exclusive references to the state and event queue to [`event.execute()`].
-    ///     1. If an error is returned, forward it as-is to the caller.
-    ///     2. Otherwise, go back to step 1.
+    /// 3. Pass `&mut self` to [`event.execute()`]. If execution results in an error, forward it to the caller;
+    ///    otherwise return to step 1.
     ///
     /// # Errors
     ///
@@ -208,7 +208,7 @@ where
     Time: SimTime + Clone,
 {
     /// Schedule the provided event to execute at the current sim time. Events previously scheduled for "now" will still
-    /// execute before this event does.
+    /// execute before this event does due to the use of insertion sequence as a tiebreaker.
     ///
     /// # Errors
     ///
@@ -226,7 +226,7 @@ where
     }
 
     /// Schedule the provided event to execute at the current sim time. Events previously scheduled for "now" will still
-    /// execute before this event does.
+    /// execute before this event does due to the use of insertion sequence as a tiebreaker.
     ///
     /// # Safety
     ///
@@ -242,7 +242,7 @@ where
     }
 
     /// Schedule the provided event to execute at the current sim time. Events previously scheduled for "now" will still
-    /// execute before this event does.
+    /// execute before this event does due to the use of insertion sequence as a tiebreaker.
     ///
     /// # Errors
     ///
@@ -257,7 +257,7 @@ where
     }
 
     /// Schedule the provided event to execute at the current sim time. Events previously scheduled for "now" will still
-    /// execute before this event does.
+    /// execute before this event does due to the use of insertion sequence as a tiebreaker.
     ///
     /// # Safety
     ///
@@ -298,9 +298,9 @@ where
     /// # Safety
     ///
     /// This method cannot directly trigger undefined behaviors, but relies on the provided `delay` being "nonnegative;"
-    /// in other words that `self.current_time().cmp(self.current_time() + delay) != Ordering::Greater` should always be
-    /// true. If you are certain that is true for your type, this method will be safe to call. Alternatively, you may
-    /// call this method to intentionally schedule an event in the past if your use case truly calls for that.
+    /// in other words that `self.current_time().cmp(self.current_time().clone() + delay) != Ordering::Greater` should
+    /// always be true. If you are certain that is true for your type, this method will be safe to call. Alternatively,
+    /// you may call this method to intentionally schedule an event in the past if your use case truly calls for that.
     pub unsafe fn schedule_with_delay_unchecked<EventType>(&mut self, event: EventType, delay: Time)
     where
         EventType: Event<State, Time> + 'static,
@@ -329,9 +329,9 @@ where
     /// # Safety
     ///
     /// This method cannot directly trigger undefined behaviors, but relies on the provided `delay` being "nonnegative;"
-    /// in other words that `self.current_time().cmp(self.current_time() + delay) != Ordering::Greater` should always be
-    /// true. If you are certain that is true for your type, this method will be safe to call. Alternatively, you may
-    /// call this method to intentionally schedule an event in the past if your use case truly calls for that.
+    /// in other words that `self.current_time().cmp(self.current_time().clone() + delay) != Ordering::Greater` should
+    /// always be true. If you are certain that is true for your type, this method will be safe to call. Alternatively,
+    /// you may call this method to intentionally schedule an event in the past if your use case truly calls for that.
     pub unsafe fn schedule_with_delay_unchecked_from_boxed(&mut self, event: Box<dyn Event<State, Time>>, delay: Time) {
         let event_time = self.current_time.clone() + delay;
         self.schedule_unchecked_from_boxed(event, event_time);

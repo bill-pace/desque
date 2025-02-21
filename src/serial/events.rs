@@ -114,6 +114,9 @@ where
     State: SimState<Time>,
     Time: SimTime,
 {
+    /// Formats the value with the given formatter. Scheduled events will be written in an arbitrary order, and the
+    /// `total_events_scheduled` is a total over the entire simulation run as opposed to the number currently on the
+    /// event queue.
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         f.debug_struct("EventQueue")
             .field("events", &self.events)

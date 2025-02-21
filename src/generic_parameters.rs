@@ -13,7 +13,7 @@ use std::fmt::Debug;
 /// tiebreaking scheme may be subject to benign race conditions, depending on how your use case takes advantage of
 /// parallelization.
 ///
-/// [`Debug`] is necessary for the implementation of Debug on both [`serial::Simulation`] and
+/// [`Debug`] is necessary for the implementation of [`Debug`] on both [`serial::Simulation`] and
 /// [`threadsafe::Simulation`].
 ///
 /// [`threadsafe::Simulation`] also requires that the time be both [`Send`] and [`Sync`]. [`Send`] allows for instances
