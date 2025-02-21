@@ -78,8 +78,8 @@ where
     ///
     /// # Panics
     ///
-    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`] to find the next event that should
-    /// be executed on each loop iteration. If that [`Mutex`] ever becomes poisoned, this method will panic.
+    /// This method requires the ability to lock the [`Mutex`] on the internal event queue to find the next event that
+    /// should be executed on each loop iteration. If that [`Mutex`] ever becomes poisoned, this method will panic.
     ///
     /// [`state.is_complete()`]: SimState::is_complete
     /// [`event.execute()`]: Event::execute
@@ -122,8 +122,8 @@ where
     ///
     /// # Panics
     ///
-    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
-    /// poisoned, this method will panic.
+    /// This method requires the ability to lock the [`Mutex`] on the internal event queue. If that [`Mutex`] ever
+    /// becomes poisoned, this method will panic.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     /// [`Mutex`]: std::sync::Mutex
@@ -156,8 +156,8 @@ where
     ///
     /// # Panics
     ///
-    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
-    /// poisoned, this method will panic.
+    /// This method requires the ability to lock the [`Mutex`] on the internal event queue. If that [`Mutex`] ever
+    /// becomes poisoned, this method will panic.
     ///
     /// [`Mutex`]: std::sync::Mutex
     pub unsafe fn schedule_unchecked<EventType>(&self, event: EventType, time: Time)
@@ -176,8 +176,8 @@ where
     ///
     /// # Panics
     ///
-    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
-    /// poisoned, this method will panic.
+    /// This method requires the ability to lock the [`Mutex`] on the internal event queue. If that [`Mutex`] ever
+    /// becomes poisoned, this method will panic.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     /// [`Mutex`]: std::sync::Mutex
@@ -207,8 +207,8 @@ where
     ///
     /// # Panics
     ///
-    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
-    /// poisoned, this method will panic.
+    /// This method requires the ability to lock the [`Mutex`] on the internal event queue. If that [`Mutex`] ever
+    /// becomes poisoned, this method will panic.
     ///
     /// [`Mutex`]: std::sync::Mutex
     pub unsafe fn schedule_unchecked_from_boxed(&self, event: Box<dyn Event<State, Time>>, time: Time) {
@@ -247,8 +247,8 @@ where
     ///
     /// # Panics
     ///
-    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
-    /// poisoned, this method will panic.
+    /// This method requires the ability to lock the [`Mutex`] on the internal event queue. If that [`Mutex`] ever
+    /// becomes poisoned, this method will panic.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     /// [`Mutex`]: std::sync::Mutex
@@ -272,8 +272,8 @@ where
     ///
     /// # Panics
     ///
-    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
-    /// poisoned, this method will panic.
+    /// This method requires the ability to lock the [`Mutex`] on the internal event queue. If that [`Mutex`] ever
+    /// becomes poisoned, this method will panic.
     ///
     /// [`Mutex`]: std::sync::Mutex
     pub unsafe fn schedule_now_unchecked<EventType>(&self, event: EventType)
@@ -294,8 +294,8 @@ where
     ///
     /// # Panics
     ///
-    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
-    /// poisoned, this method will panic.
+    /// This method requires the ability to lock the [`Mutex`] on the internal event queue. If that [`Mutex`] ever
+    /// becomes poisoned, this method will panic.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     /// [`Mutex`]: std::sync::Mutex
@@ -316,8 +316,8 @@ where
     ///
     /// # Panics
     ///
-    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
-    /// poisoned, this method will panic.
+    /// This method requires the ability to lock the [`Mutex`] on the internal event queue. If that [`Mutex`] ever
+    /// becomes poisoned, this method will panic.
     ///
     /// [`Mutex`]: std::sync::Mutex
     pub unsafe fn schedule_now_unchecked_from_boxed(&self, event: Box<dyn Event<State, Time>>) {
@@ -340,8 +340,8 @@ where
     ///
     /// # Panics
     ///
-    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
-    /// poisoned, this method will panic.
+    /// This method requires the ability to lock the [`Mutex`] on the internal event queue. If that [`Mutex`] ever
+    /// becomes poisoned, this method will panic.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     /// [`Mutex`]: std::sync::Mutex
@@ -365,8 +365,8 @@ where
     ///
     /// # Panics
     ///
-    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
-    /// poisoned, this method will panic.
+    /// This method requires the ability to lock the [`Mutex`] on the internal event queue. If that [`Mutex`] ever
+    /// becomes poisoned, this method will panic.
     ///
     /// [`Mutex`]: std::sync::Mutex
     pub unsafe fn schedule_with_delay_unchecked<EventType>(&self, event: EventType, delay: Time)
@@ -387,8 +387,8 @@ where
     ///
     /// # Panics
     ///
-    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
-    /// poisoned, this method will panic.
+    /// This method requires the ability to lock the [`Mutex`] on the internal event queue. If that [`Mutex`] ever
+    /// becomes poisoned, this method will panic.
     ///
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     /// [`Mutex`]: std::sync::Mutex
@@ -409,8 +409,8 @@ where
     ///
     /// # Panics
     ///
-    /// This method requires the ability to lock the [`Mutex`] on the [`EventQueue`]. If that [`Mutex`] ever becomes
-    /// poisoned, this method will panic.
+    /// This method requires the ability to lock the [`Mutex`] on the internal event queue. If that [`Mutex`] ever
+    /// becomes poisoned, this method will panic.
     ///
     /// [`Mutex`]: std::sync::Mutex
     pub unsafe fn schedule_with_delay_unchecked_from_boxed(&self, event: Box<dyn Event<State, Time>>, delay: Time) {

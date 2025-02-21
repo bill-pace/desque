@@ -8,22 +8,23 @@ use std::fmt::Debug;
 /// generic over the types used to represent simulation state and clock time to enable your implementations of each
 /// trait to work together within this framework.
 ///
-/// Requiring implementors to be [`Debug`] enables printing the full contents of a [`EventQueue`] when necessary. Events
-/// must be [`Send`] to enable scheduling them on the event queue from any thread. However, desque does not require that
-/// events also be [`Sync`] as desque does not directly share events across thread boundaries.
+/// Requiring implementors to be [`Debug`] enables printing the full contents of a [`Simulation`]'s internal event queue
+/// when necessary. Events must be [`Send`] to enable scheduling them on the event queue from any thread. However,
+/// desque does not require that events also be [`Sync`] as desque does not directly share events across thread
+/// boundaries.
 ///
 /// Note that desque does not directly support the notion of interrupting events, so if you need that functionality then
 /// you may wish to extend this trait or to otherwise provide a means for your interruptible events to determine whether
 /// they should execute when popped from the queue.
 ///
-/// [`threadsafe::Event`]'s interface differs only from [`serial::Event`]'s in the type of event queue parameter. This
-/// difference is necessary as [`threadsafe::EventQueue`]'s scheduling methods take a `&self` receiver whereas
-/// [`serial::EventQueue`]'s scheduling methods take a `&mut self` receiver.
+/// [`threadsafe::Event`]'s interface differs only from [`serial::Event`]'s in the type of simulation parameter. This
+/// difference is necessary as [`threadsafe::Simulation`]'s scheduling methods take a `&self` receiver whereas
+/// [`serial::Simulation`]'s scheduling methods take a `&mut self` receiver.
 ///
 /// [`threadsafe::Event`]: Event
 /// [`serial::Event`]: crate::serial::Event
-/// [`threadsafe::EventQueue`]: EventQueue
-/// [`serial::EventQueue`]: crate::serial::EventQueue
+/// [`threadsafe::Simulation`]: Simulation
+/// [`serial::Simulation`]: crate::serial::Simulation
 pub trait Event<State, Time>: Debug + Send
 where
     State: SimState<Time> + Sync,
@@ -73,7 +74,7 @@ where
 /// implementation of [`Event`] is provided for all implementors of this trait which simply invokes
 /// [`OkEvent::execute()`] then returns `Ok(())`.
 ///
-/// As with the requirement on [`Event`], implementing [`Debug`] enables a [`EventQueue`] to print all of its contents
+/// As with the requirement on [`Event`], implementing [`Debug`] enables a [`Simulation`] to print all of its contents
 /// when client code deems it necessary. [`Send`] is similarly required for the promise that these events can be
 /// enqueued from any thread.
 ///

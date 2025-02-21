@@ -1,7 +1,7 @@
 /// Errors that may be encountered while executing a simulation.
 ///
-/// The [`BackInTime`] variant originates from the safe interface of the [`serial::EventQueue`] or
-/// [`threadsafe::EventQueue`] to indicate that an event's scheduled execution time is prior to the queue's current
+/// The [`BackInTime`] variant originates from the safe interface of the [`serial::Simulation`] or
+/// [`threadsafe::Simulation`] to indicate that an event's scheduled execution time is prior to the simulation's current
 /// time. This error likely corresponds to a logical bug on the client side, e.g. forgetting to add an offset to the
 /// current time when scheduling a new event.
 ///
@@ -9,8 +9,8 @@
 /// [`serial::Simulation::run()`] or [`threadsafe::Simulation::run()`] in a type-safe manner. Invoking [`source()`] on
 /// this variant will acquire a shared reference to the wrapped [`std::error::Error`] for handling on the client side.
 ///
-/// [`serial::EventQueue`]: crate::serial::EventQueue
-/// [`threadsafe::EventQueue`]: crate::threadsafe::EventQueue
+/// [`serial::Simulation`]: crate::serial::Simulation
+/// [`threadsafe::Simulation`]: crate::threadsafe::Simulation
 /// [`serial::Simulation::run()`]: crate::serial::Simulation::run
 /// [`threadsafe::Simulation::run()`]: crate::threadsafe::Simulation::run
 /// [`BackInTime`]: Error::BackInTime

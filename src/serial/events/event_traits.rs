@@ -8,7 +8,8 @@ use std::fmt::Debug;
 /// generic over the types used to represent simulation state and clock time to enable your implementations of each
 /// trait to work together within this framework.
 ///
-/// Requiring implementors to be [`Debug`] enables printing the full contents of an [`EventQueue`] when necessary.
+/// Requiring implementors to be [`Debug`] enables printing the full contents of a [`Simulation`]'s internal event queue
+/// when necessary.
 ///
 /// Note that desque does not directly support the notion of interrupting events, so if you need that functionality then
 /// you may wish to extend this trait or to otherwise provide a means for your interruptible events to determine whether
@@ -55,7 +56,7 @@ where
 /// implementation of [`Event`] is provided for all implementors of this trait which simply invokes
 /// [`OkEvent::execute()`] then returns `Ok(())`.
 ///
-/// As with the requirement on [`Event`], implementing [`Debug`] enables an [`EventQueue`] to print all of its contents
+/// As with the requirement on [`Event`], implementing [`Debug`] enables a [`Simulation`] to print all of its contents
 /// when client code deems it necessary.
 ///
 /// [`execute()`]: OkEvent::execute
