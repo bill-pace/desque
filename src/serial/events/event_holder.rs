@@ -1,14 +1,14 @@
 use super::Event;
 use crate::{SimState, SimTime};
 use std::cmp::Ordering;
+use std::fmt::Formatter;
 
 /// Helper struct for the event queue. This struct holds a [`Box`] to the event itself alongside the data necessary to
 /// sort events within the priority queue, namely the execution time and a record of the event's insertion sequence.
 ///
 /// The implementation of [`Ord`] on this struct cares first about the execution time, giving full control of event
 /// ordering to client code, comparing the insertion sequences only to break ties.
-#[derive(Debug)]
-pub(super) struct EventHolder<State, Time>
+pub(super) struct ScheduledEvent<State, Time>
 where
     State: SimState<Time>,
     Time: SimTime,
@@ -18,7 +18,7 @@ where
     pub insertion_sequence: usize,
 }
 
-impl<State, Time> PartialEq<Self> for EventHolder<State, Time>
+impl<State, Time> PartialEq<Self> for ScheduledEvent<State, Time>
 where
     State: SimState<Time>,
     Time: SimTime,
@@ -28,14 +28,14 @@ where
     }
 }
 
-impl<State, Time> Eq for EventHolder<State, Time>
+impl<State, Time> Eq for ScheduledEvent<State, Time>
 where
     State: SimState<Time>,
     Time: SimTime,
 {
 }
 
-impl<State, Time> PartialOrd<Self> for EventHolder<State, Time>
+impl<State, Time> PartialOrd<Self> for ScheduledEvent<State, Time>
 where
     State: SimState<Time>,
     Time: SimTime,
@@ -45,7 +45,7 @@ where
     }
 }
 
-impl<State, Time> Ord for EventHolder<State, Time>
+impl<State, Time> Ord for ScheduledEvent<State, Time>
 where
     State: SimState<Time>,
     Time: SimTime,
@@ -56,5 +56,19 @@ where
             Ordering::Equal => self.insertion_sequence.cmp(&other.insertion_sequence),
             _ => comparison,
         }
+    }
+}
+
+impl<State, Time> std::fmt::Debug for ScheduledEvent<State, Time>
+where
+    State: SimState<Time>,
+    Time: SimTime,
+{
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        f.debug_struct("ScheduledEvent")
+            .field("event", &self.event)
+            .field("execution_time", &self.execution_time)
+            .field("insertion_sequence", &self.insertion_sequence)
+            .finish()
     }
 }

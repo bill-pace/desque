@@ -513,8 +513,7 @@ mod tests {
         unsafe {
             sim.schedule_unchecked(TestEvent { value: 1 }, -1);
         }
-        sim.next_event()
-            .expect("event queue should yield a scheduled event");
+        sim.next_event().expect("event queue should yield a scheduled event");
         assert_eq!(
             -1,
             *sim.current_time(),

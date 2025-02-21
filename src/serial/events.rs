@@ -2,12 +2,33 @@ mod event_holder;
 pub(super) mod event_traits;
 
 use crate::{SimState, SimTime};
-use event_holder::EventHolder;
+use event_holder::ScheduledEvent;
 use event_traits::Event;
 
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
-use std::fmt::Debug;
+use std::fmt::{Debug, Formatter};
+
+#[derive(Default)]
+struct BinaryHeapWrapper<State, Time>
+where
+    State: SimState<Time>,
+    Time: SimTime,
+{
+    heap: BinaryHeap<Reverse<ScheduledEvent<State, Time>>>,
+}
+
+impl<State, Time> Debug for BinaryHeapWrapper<State, Time>
+where
+    State: SimState<Time>,
+    Time: SimTime,
+{
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        f.debug_list()
+            .entries(self.heap.iter().map(|holder| &holder.0))
+            .finish()
+    }
+}
 
 /// Priority queue of scheduled events.
 ///
@@ -36,14 +57,14 @@ use std::fmt::Debug;
 ///
 /// [`Simulation::run()`]: crate::serial::Simulation::run
 /// [`Error::BackInTime`]: crate::Error::BackInTime
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub(super) struct EventQueue<State, Time>
 where
     State: SimState<Time>,
     Time: SimTime,
 {
-    events: BinaryHeap<Reverse<EventHolder<State, Time>>>,
-    events_added: usize,
+    events: BinaryHeapWrapper<State, Time>,
+    total_events_scheduled: usize,
 }
 
 impl<State, Time> EventQueue<State, Time>
@@ -53,14 +74,16 @@ where
 {
     pub fn new() -> Self {
         Self {
-            events: BinaryHeap::default(),
-            events_added: 0,
+            events: BinaryHeapWrapper {
+                heap: BinaryHeap::default(),
+            },
+            total_events_scheduled: 0,
         }
     }
 
     pub fn schedule_event(&mut self, event: Box<dyn Event<State, Time>>, time: Time) {
         let count = self.increment_event_count();
-        self.events.push(Reverse(EventHolder {
+        self.events.heap.push(Reverse(ScheduledEvent {
             execution_time: time,
             event,
             insertion_sequence: count,
@@ -70,19 +93,32 @@ where
     /// Helper function to make sure incrementing the internal count of added events occurs the same way across all
     /// scheduling methods.
     fn increment_event_count(&mut self) -> usize {
-        let count = self.events_added;
-        self.events_added += 1;
+        let count = self.total_events_scheduled;
+        self.total_events_scheduled += 1;
         count
     }
 
     /// Crate-internal function to pop an event from the queue. Updates the current clock time to match the execution
     /// time of the popped event.
     pub fn next(&mut self) -> Option<(Box<dyn Event<State, Time>>, Time)> {
-        if let Some(event_holder) = self.events.pop() {
+        if let Some(event_holder) = self.events.heap.pop() {
             Some((event_holder.0.event, event_holder.0.execution_time))
         } else {
             None
         }
+    }
+}
+
+impl<State, Time> Debug for EventQueue<State, Time>
+where
+    State: SimState<Time>,
+    Time: SimTime,
+{
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        f.debug_struct("EventQueue")
+            .field("events", &self.events)
+            .field("total_events_scheduled", &self.total_events_scheduled)
+            .finish()
     }
 }
 
@@ -91,7 +127,7 @@ where
     State: SimState<Time>,
     Time: SimTime,
 {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(formatter, "EventQueue with {} scheduled events", self.events.len(),)
+    fn fmt(&self, formatter: &mut Formatter) -> std::fmt::Result {
+        write!(formatter, "EventQueue with {} scheduled events", self.events.heap.len(),)
     }
 }

@@ -2,13 +2,45 @@ mod event_holder;
 pub(super) mod event_traits;
 
 use crate::{SimState, SimTime};
-use event_holder::EventHolder;
+use event_holder::ScheduledEvent;
 use event_traits::Event;
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
-use std::fmt::Debug;
+use std::fmt::{Debug, Formatter};
 use std::sync::atomic;
 use std::sync::Mutex;
+
+struct BinaryHeapWrapper<State, Time>
+where
+    State: SimState<Time> + Sync,
+    Time: SimTime + Send + Sync,
+{
+    heap: BinaryHeap<Reverse<ScheduledEvent<State, Time>>>,
+}
+
+impl<State, Time> Debug for BinaryHeapWrapper<State, Time>
+where
+    State: SimState<Time> + Sync,
+    Time: SimTime + Send + Sync,
+{
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        f.debug_list()
+            .entries(self.heap.iter().map(|holder| &holder.0))
+            .finish()
+    }
+}
+
+impl<State, Time> Default for BinaryHeapWrapper<State, Time>
+where
+    State: SimState<Time> + Sync,
+    Time: SimTime + Send + Sync,
+{
+    fn default() -> Self {
+        Self {
+            heap: BinaryHeap::default(),
+        }
+    }
+}
 
 /// Priority queue of scheduled events.
 ///
@@ -58,7 +90,7 @@ where
     State: SimState<Time> + Sync,
     Time: SimTime + Send + Sync,
 {
-    events: Mutex<BinaryHeap<Reverse<EventHolder<State, Time>>>>,
+    events: Mutex<BinaryHeapWrapper<State, Time>>,
     /// Using an atomic here allows for interior mutability, but synchronization is actually controlled by the mutex on
     /// the `events` field. This value will only mutate with that mutex locked, and so can use entirely Relaxed ordering
     events_added: atomic::AtomicUsize,
@@ -83,7 +115,7 @@ where
             .lock()
             .expect("event queue mutex should not have been poisoned");
 
-        events_guard.push(Reverse(EventHolder {
+        events_guard.heap.push(Reverse(ScheduledEvent {
             execution_time: time,
             event,
             insertion_sequence: self.events_added.fetch_add(1, atomic::Ordering::Relaxed),
@@ -102,6 +134,7 @@ where
             .events
             .lock()
             .expect("event queue mutex should not have been poisoned")
+            .heap
             .pop()
         {
             Some((event_holder.0.event, event_holder.0.execution_time))
@@ -116,13 +149,14 @@ where
     State: SimState<Time> + Sync,
     Time: SimTime + Send + Sync,
 {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, formatter: &mut Formatter) -> std::fmt::Result {
         write!(
             formatter,
             "EventQueue with {} scheduled events",
             self.events
                 .lock()
                 .expect("event queue mutex should not have been poisoned")
+                .heap
                 .len(),
         )
     }
