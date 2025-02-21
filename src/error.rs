@@ -63,8 +63,6 @@ impl std::error::Error for Error {
     }
 }
 
-/// [`std::result::Result`]`<(), `[`desque::Error`]`>`
-///
 /// Simplifies the signatures of various functions in desque.
 ///
 /// [`desque::Error`]: Error
