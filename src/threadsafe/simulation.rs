@@ -36,6 +36,8 @@ where
     event_queue: EventQueue<State, Time>,
     /// The current shared state of the Simulation. Exclusive access will be granted to each event that executes.
     state: State,
+    /// The current simulation time.
+    current_time: Time,
 }
 
 impl<State, Time> Simulation<State, Time>
@@ -47,8 +49,9 @@ where
     /// provided starting time.
     pub fn new(initial_state: State, start_time: Time) -> Self {
         Self {
-            event_queue: EventQueue::new(start_time),
+            event_queue: EventQueue::new(),
             state: initial_state,
+            current_time: start_time,
         }
     }
 
@@ -87,17 +90,26 @@ where
     /// [`Mutex`]: std::sync::Mutex
     pub fn run(&mut self) -> crate::Result {
         loop {
-            if self.state.is_complete(self.event_queue.current_time()) {
+            if self.state.is_complete(self.current_time()) {
                 return Ok(());
             }
 
-            let next_event = self.event_queue.next();
+            let next_event = self.next_event();
             if next_event.is_none() {
                 return Ok(());
             }
 
             let mut next_event = next_event.expect("next_event should not be None");
             next_event.execute(self)?;
+        }
+    }
+
+    fn next_event(&mut self) -> Option<Box<dyn Event<State, Time>>> {
+        if let Some((event, time)) = self.event_queue.next() {
+            self.current_time = time;
+            Some(event)
+        } else {
+            None
         }
     }
 
@@ -119,7 +131,17 @@ where
     where
         EventType: Event<State, Time> + 'static,
     {
-        self.event_queue.schedule(event, time)
+        if time < self.current_time {
+            return Err(crate::Error::BackInTime);
+        }
+
+        // SAFETY: we've just checked that the desired execution time is either
+        // Equal or Greater when compared to the current clock time, so it'll
+        // be fine to add to the queue
+        unsafe {
+            self.schedule_unchecked(event, time);
+        }
+        Ok(())
     }
 
     /// Schedule the provided event at the specified time. Assumes that the provided time is valid in the context of the
@@ -142,7 +164,7 @@ where
     where
         EventType: Event<State, Time> + 'static,
     {
-        self.event_queue.schedule_unchecked(event, time);
+        self.schedule_unchecked_from_boxed(Box::new(event), time);
     }
 
     /// Schedule the provided event at the specified time.
@@ -160,7 +182,17 @@ where
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     /// [`Mutex`]: std::sync::Mutex
     pub fn schedule_from_boxed(&self, event: Box<dyn Event<State, Time>>, time: Time) -> crate::Result {
-        self.event_queue.schedule_from_boxed(event, time)
+        if time < self.current_time {
+            return Err(crate::Error::BackInTime);
+        }
+
+        // SAFETY: we've just checked that the desired execution time is either
+        // Equal or Greater when compared to the current clock time, so it'll
+        // be fine to add to the queue
+        unsafe {
+            self.schedule_unchecked_from_boxed(event, time);
+        }
+        Ok(())
     }
 
     /// Schedule the provided event at the specified time. Assumes that the provided time is valid in the context of the
@@ -180,7 +212,7 @@ where
     ///
     /// [`Mutex`]: std::sync::Mutex
     pub unsafe fn schedule_unchecked_from_boxed(&self, event: Box<dyn Event<State, Time>>, time: Time) {
-        self.event_queue.schedule_unchecked_from_boxed(event, time);
+        self.event_queue.schedule_event(event, time);
     }
 
     /// Get a shared reference to the simulation state.
@@ -195,7 +227,7 @@ where
 
     /// Get a shared reference to the current simulation time.
     pub fn current_time(&self) -> &Time {
-        self.event_queue.current_time()
+        &self.current_time
     }
 }
 
@@ -224,7 +256,8 @@ where
     where
         EventType: Event<State, Time> + 'static,
     {
-        self.event_queue.schedule_now(event)
+        let event_time = self.current_time.clone();
+        self.schedule(event, event_time)
     }
 
     /// Schedule the provided event to execute at the current sim time. Events previously scheduled for "now" will still
@@ -247,7 +280,7 @@ where
     where
         EventType: Event<State, Time> + 'static,
     {
-        self.event_queue.schedule_now_unchecked(event);
+        self.schedule_unchecked(event, self.current_time.clone());
     }
 
     /// Schedule the provided event to execute at the current sim time. Events previously scheduled for "now" will still
@@ -267,7 +300,8 @@ where
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     /// [`Mutex`]: std::sync::Mutex
     pub fn schedule_now_from_boxed(&self, event: Box<dyn Event<State, Time>>) -> crate::Result {
-        self.event_queue.schedule_now_from_boxed(event)
+        let event_time = self.current_time.clone();
+        self.schedule_from_boxed(event, event_time)
     }
 
     /// Schedule the provided event to execute at the current sim time. Events previously scheduled for "now" will still
@@ -287,7 +321,7 @@ where
     ///
     /// [`Mutex`]: std::sync::Mutex
     pub unsafe fn schedule_now_unchecked_from_boxed(&self, event: Box<dyn Event<State, Time>>) {
-        self.event_queue.schedule_now_unchecked_from_boxed(event);
+        self.schedule_unchecked_from_boxed(event, self.current_time.clone());
     }
 }
 
@@ -315,7 +349,8 @@ where
     where
         EventType: Event<State, Time> + 'static,
     {
-        self.event_queue.schedule_with_delay(event, delay)
+        let event_time = self.current_time.clone() + delay;
+        self.schedule(event, event_time)
     }
 
     /// Schedule the provided event after the specified delay. The event's execution time will be equal to the result of
@@ -338,7 +373,8 @@ where
     where
         EventType: Event<State, Time> + 'static,
     {
-        self.event_queue.schedule_with_delay_unchecked(event, delay);
+        let event_time = self.current_time.clone() + delay;
+        self.schedule_unchecked(event, event_time);
     }
 
     /// Schedule the provided event after the specified delay. The event's execution time will be equal to the result of
@@ -357,7 +393,8 @@ where
     /// [`Error::BackInTime`]: crate::Error::BackInTime
     /// [`Mutex`]: std::sync::Mutex
     pub fn schedule_with_delay_from_boxed(&self, event: Box<dyn Event<State, Time>>, delay: Time) -> crate::Result {
-        self.event_queue.schedule_with_delay_from_boxed(event, delay)
+        let event_time = self.current_time.clone() + delay;
+        self.schedule_from_boxed(event, event_time)
     }
 
     /// Schedule the provided event after the specified delay. The event's execution time will be equal to the result of
@@ -377,7 +414,8 @@ where
     ///
     /// [`Mutex`]: std::sync::Mutex
     pub unsafe fn schedule_with_delay_unchecked_from_boxed(&self, event: Box<dyn Event<State, Time>>, delay: Time) {
-        self.event_queue.schedule_with_delay_unchecked_from_boxed(event, delay);
+        let event_time = self.current_time.clone() + delay;
+        self.schedule_unchecked_from_boxed(event, event_time);
     }
 }
 
@@ -387,7 +425,7 @@ where
     Time: SimTime + Send + Sync,
 {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
-        write!(f, "Simulation at time {:?}", self.event_queue.current_time())
+        write!(f, "Simulation at time {:?}", self.current_time())
     }
 }
 
@@ -440,7 +478,7 @@ mod tests {
         let events: [TestEvent; 3] = [TestEvent { value: 1 }, TestEvent { value: 3 }, TestEvent { value: 2 }];
 
         for (i, event) in events.into_iter().enumerate() {
-            sim.event_queue.schedule(event, 2 * i as i32).unwrap();
+            sim.schedule(event, 2 * i as i32).unwrap();
         }
         sim
     }
@@ -475,12 +513,11 @@ mod tests {
         unsafe {
             sim.schedule_unchecked(TestEvent { value: 1 }, -1);
         }
-        sim.event_queue
-            .next()
+        sim.next_event()
             .expect("event queue should yield a scheduled event");
         assert_eq!(
             -1,
-            *sim.event_queue.current_time(),
+            *sim.current_time(),
             "current time did not update when popping event"
         );
     }
@@ -498,7 +535,7 @@ mod tests {
             sim.schedule(TestEvent { value: copy_id }, 1)
                 .expect("failed to schedule event");
         }
-        while let Some(mut event) = sim.event_queue.next() {
+        while let Some(mut event) = sim.next_event() {
             event.execute(&mut sim).expect("failed to execute event");
         }
 
@@ -525,9 +562,7 @@ mod tests {
     #[test]
     fn simulation_stops_with_events_still_in_queue() {
         let mut sim = setup();
-        sim.event_queue
-            .schedule_from_boxed(Box::new(CompletionEvent {}), 3)
-            .unwrap();
+        sim.schedule_from_boxed(Box::new(CompletionEvent {}), 3).unwrap();
         sim.run().unwrap();
 
         let expected = vec![1, 3];
@@ -547,7 +582,7 @@ mod tests {
         sim.schedule(TestEvent { value: 1 }, 1).unwrap();
         sim.schedule(TestEvent { value: 2 }, 3).unwrap();
 
-        let mut first_event = sim.event_queue.next().expect("should be able to pop scheduled event");
+        let mut first_event = sim.next_event().expect("should be able to pop scheduled event");
         first_event.execute(&mut sim).expect("event should execute normally");
         assert_eq!(1, *sim.current_time(), "queue should be at time of last popped event");
         assert_eq!(
@@ -561,26 +596,18 @@ mod tests {
         sim.schedule_with_delay(TestEvent { value: 4 }, 1)
             .expect("should be able to schedule new event");
 
-        let mut next_event = sim.event_queue.next().expect("should be able to pop scheduled event");
+        let mut next_event = sim.next_event().expect("should be able to pop scheduled event");
         next_event.execute(&mut sim).expect("event should execute normally");
-        assert_eq!(
-            1,
-            *sim.event_queue.current_time(),
-            "queue should be at time of last popped event"
-        );
+        assert_eq!(1, *sim.current_time(), "queue should be at time of last popped event");
         assert_eq!(
             vec![1, 3],
             sim.state().executed_event_values,
             "state should match first executed event"
         );
 
-        next_event = sim.event_queue.next().expect("should be able to pop scheduled event");
+        next_event = sim.next_event().expect("should be able to pop scheduled event");
         next_event.execute(&mut sim).expect("event should execute normally");
-        assert_eq!(
-            2,
-            *sim.event_queue.current_time(),
-            "queue should be at time of last popped event"
-        );
+        assert_eq!(2, *sim.current_time(), "queue should be at time of last popped event");
         assert_eq!(
             vec![1, 3, 4],
             sim.state().executed_event_values,
