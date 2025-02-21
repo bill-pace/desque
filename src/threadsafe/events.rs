@@ -10,7 +10,7 @@ use std::fmt::{Debug, Formatter};
 use std::sync::atomic;
 use std::sync::Mutex;
 
-/// Helper struct to set a Debug impl that hides everything about BinaryHeap and Reverse
+/// Helper struct to set a Debug impl that hides everything about `BinaryHeap` and `Reverse`
 struct BinaryHeapWrapper<State, Time>
 where
     State: SimState<Time> + Sync,

@@ -9,7 +9,7 @@ use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 use std::fmt::{Debug, Formatter};
 
-/// Helper struct to set a Debug impl that hides everything about BinaryHeap and Reverse
+/// Helper struct to set a Debug impl that hides everything about `BinaryHeap` and `Reverse`
 #[derive(Default)]
 struct BinaryHeapWrapper<State, Time>
 where
