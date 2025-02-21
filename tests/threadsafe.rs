@@ -32,19 +32,18 @@ impl SpawnEvent {
 unsafe impl Send for SpawnEvent {}
 
 impl OkEvent<Ecosystem, usize> for SpawnEvent {
-    fn execute(&mut self, ecosystem: &mut Ecosystem, event_queue: &mut EventQueue<Ecosystem, usize>) {
+    fn execute(&mut self, sim: &mut Simulation<Ecosystem, usize>) {
         // parent dies off but has four children if it can eat
-        ecosystem.between_generations = false;
-        ecosystem.population.fetch_sub(1, atomic::Ordering::Relaxed);
+        sim.state_mut().between_generations = false;
+        sim.state().population.fetch_sub(1, atomic::Ordering::Relaxed);
 
-        if ecosystem.remaining_food > 0 {
-            ecosystem.remaining_food -= 1;
+        if sim.state().remaining_food > 0 {
+            sim.state_mut().remaining_food -= 1;
             thread::scope(|scope| {
                 scope.spawn(|| {
                     for _ in 0..4 {
-                        ecosystem.population.fetch_add(1, atomic::Ordering::Relaxed);
-                        event_queue
-                            .schedule_with_delay(Self::new(), 1)
+                        sim.state().population.fetch_add(1, atomic::Ordering::Relaxed);
+                        sim.schedule_with_delay(Self::new(), 1)
                             .expect("positive delay should result in no errors");
                     }
                 });
@@ -57,11 +56,10 @@ impl OkEvent<Ecosystem, usize> for SpawnEvent {
 struct StatusUpdateEvent {}
 
 impl OkEvent<Ecosystem, usize> for StatusUpdateEvent {
-    fn execute(&mut self, ecosystem: &mut Ecosystem, event_queue: &mut EventQueue<Ecosystem, usize>) {
-        event_queue
-            .schedule_with_delay(Self {}, 1)
+    fn execute(&mut self, sim: &mut Simulation<Ecosystem, usize>) {
+        sim.schedule_with_delay(Self {}, 1)
             .expect("positive delay should not result in error");
-        ecosystem.between_generations = true;
+        sim.state_mut().between_generations = true;
     }
 }
 
@@ -81,11 +79,7 @@ fn threadsafe_sim_reaches_expected_result() {
     sim.run().expect("simulation should complete with no errors");
 
     assert_eq!(0, sim.state().remaining_food, "unexpected amount of food remaining");
-    assert_eq!(
-        5,
-        *sim.event_queue().current_time(),
-        "unexpected number of generations passed"
-    );
+    assert_eq!(5, *sim.current_time(), "unexpected number of generations passed");
     assert_eq!(
         1024,
         sim.state().population.load(atomic::Ordering::Relaxed),
