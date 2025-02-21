@@ -9,6 +9,7 @@ use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 use std::fmt::{Debug, Formatter};
 
+/// Helper struct to set a Debug impl that hides everything about BinaryHeap and Reverse
 #[derive(Default)]
 struct BinaryHeapWrapper<State, Time>
 where
@@ -72,6 +73,7 @@ where
     State: SimState<Time>,
     Time: SimTime,
 {
+    /// Initialize an empty queue
     pub fn new() -> Self {
         Self {
             events: BinaryHeapWrapper {
@@ -81,6 +83,7 @@ where
         }
     }
 
+    /// Place an event on the queue. By the time we're here, assume all error checking is complete.
     pub fn schedule_event(&mut self, event: Box<dyn Event<State, Time>>, time: Time) {
         let count = self.increment_event_count();
         self.events.heap.push(Reverse(ScheduledEvent {

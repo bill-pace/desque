@@ -10,6 +10,7 @@ use std::fmt::{Debug, Formatter};
 use std::sync::atomic;
 use std::sync::Mutex;
 
+/// Helper struct to set a Debug impl that hides everything about BinaryHeap and Reverse
 struct BinaryHeapWrapper<State, Time>
 where
     State: SimState<Time> + Sync,
@@ -101,7 +102,7 @@ where
     State: SimState<Time> + Sync,
     Time: SimTime + Send + Sync,
 {
-    /// Construct a new [`EventQueue`] with no scheduled events and a clock initialized to the provided time.
+    /// Construct a new, empty [`EventQueue`]
     pub fn new() -> Self {
         Self {
             events: Mutex::default(),
@@ -109,6 +110,7 @@ where
         }
     }
 
+    /// Place an event on the queue. By the time we're here, assume all error checking is complete.
     pub fn schedule_event(&self, event: Box<dyn Event<State, Time>>, time: Time) {
         let mut events_guard = self
             .events
