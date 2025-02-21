@@ -59,7 +59,7 @@ where
     ///
     /// See [`Error`] for more details on the variants of this error enum.
     ///
-    /// [`Simulation::run()`]: crate::threadsafe::Simulation::run
+    /// [`Simulation::run()`]: Simulation::run
     /// [`execute()`]: Event::execute
     /// [`dyn std::error::Error`]: std::error::Error
     /// [`Error`]: crate::Error
