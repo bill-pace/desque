@@ -77,18 +77,18 @@ struct ArrivalEvent {}
 impl ArrivalEvent {
     /// Draw an exponential random number with mean 30.0 to produce the next arrival time and place a new ArrivalEvent
     /// on the queue for that time.
-    fn schedule(simulation_state: &mut Store, event_queue: &mut EventQueue<Store, Time>) -> Result {
+    fn schedule(sim: &mut Simulation<Store, Time>) -> Result {
         let distribution = Exp::new(1.0 / 30.0).unwrap();
-        let next_arrival_delay = distribution.sample(&mut simulation_state.rng);
-        let next_arrival_time = *event_queue.current_time() + next_arrival_delay;
-        event_queue.schedule(ArrivalEvent {}, next_arrival_time)
+        let next_arrival_delay = distribution.sample(&mut sim.state_mut().rng);
+        let next_arrival_time = *sim.current_time() + next_arrival_delay;
+        sim.schedule(ArrivalEvent {}, next_arrival_time)
     }
 
     fn schedule_first(sim: &mut Simulation<Store, Time>) -> Result {
         let distribution = Exp::new(1.0 / 30.0).unwrap();
         let next_arrival_delay = distribution.sample(&mut sim.state_mut().rng);
-        let next_arrival_time = *sim.event_queue().current_time() + next_arrival_delay;
-        sim.event_queue_mut().schedule(Self {}, next_arrival_time)
+        let next_arrival_time = *sim.current_time() + next_arrival_delay;
+        sim.schedule(Self {}, next_arrival_time)
     }
 }
 
@@ -96,25 +96,22 @@ impl Event<Store, Time> for ArrivalEvent {
     /// If server is idle, mark it busy and schedule a service event. Otherwise, increment the queue length.
     ///
     /// Regardless, schedule a new ArrivalEvent.
-    fn execute(&mut self, simulation_state: &mut Store, event_queue: &mut EventQueue<Store, Time>) -> Result {
-        println!(
-            "Handling customer arrival at time {:.3}...",
-            event_queue.current_time().0
-        );
+    fn execute(&mut self, sim: &mut Simulation<Store, Time>) -> Result {
+        println!("Handling customer arrival at time {:.3}...", sim.current_time().0);
 
-        if simulation_state.server_busy {
+        if sim.state().server_busy {
             println!(
                 "Server is occupied with prior customer. Getting in line behind {} other customers.",
-                simulation_state.queue_length,
+                sim.state().queue_length,
             );
-            simulation_state.queue_length += 1;
+            sim.state_mut().queue_length += 1;
         } else {
             println!("Server is idle; moving to counter.");
-            simulation_state.server_busy = true;
-            ServiceEvent::schedule(simulation_state, event_queue)?;
+            sim.state_mut().server_busy = true;
+            ServiceEvent::schedule(sim)?;
         }
 
-        ArrivalEvent::schedule(simulation_state, event_queue)?;
+        ArrivalEvent::schedule(sim)?;
         Ok(())
     }
 }
@@ -126,33 +123,33 @@ struct ServiceEvent {}
 impl ServiceEvent {
     /// Draw an exponential random number with mean 20.0 to produce the next service time and place a new ServiceEvent
     /// on the queue for that time.
-    fn schedule(simulation_state: &mut Store, event_queue: &mut EventQueue<Store, Time>) -> Result {
+    fn schedule(sim: &mut Simulation<Store, Time>) -> Result {
         let distribution = Exp::new(1.0 / 20.0).unwrap();
-        let service_length = distribution.sample(&mut simulation_state.rng);
-        let service_completion_time = *event_queue.current_time() + service_length;
-        event_queue.schedule(ServiceEvent {}, service_completion_time)
+        let service_length = distribution.sample(&mut sim.state_mut().rng);
+        let service_completion_time = *sim.current_time() + service_length;
+        sim.schedule(ServiceEvent {}, service_completion_time)
     }
 }
 
 impl Event<Store, Time> for ServiceEvent {
     /// If at least one other customer is in line, decrement the length of the line and schedule a new ServiceEvent.
     /// Otherwise, mark the server as idle.
-    fn execute(&mut self, simulation_state: &mut Store, event_queue: &mut EventQueue<Store, Time>) -> Result {
+    fn execute(&mut self, sim: &mut Simulation<Store, Time>) -> Result {
         println!(
             "Completed service for customer. Checking queue at time {:.3}...",
-            event_queue.current_time().0,
+            sim.current_time().0,
         );
 
-        if simulation_state.queue_length == 0 {
+        if sim.state().queue_length == 0 {
             println!("Queue empty! Waiting for next arrival.");
-            simulation_state.server_busy = false;
+            sim.state_mut().server_busy = false;
         } else {
-            simulation_state.queue_length -= 1;
+            sim.state_mut().queue_length -= 1;
             println!(
                 "Beginning service for next customer. {} remain in the queue.",
-                simulation_state.queue_length,
+                sim.state().queue_length,
             );
-            ServiceEvent::schedule(simulation_state, event_queue)?;
+            ServiceEvent::schedule(sim)?;
         }
 
         Ok(())

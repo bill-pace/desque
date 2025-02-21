@@ -61,39 +61,37 @@ mod ordered_float_tests {
     struct ArrivalEvent {}
 
     impl ArrivalEvent {
-        fn schedule(sim_state: &mut Store, events: &mut EventQueue<Store, NotNan<f64>>) {
-            let arrival_delay = NotNan::new(sim_state.gen_arrival_delay()).expect("delay should not be NaN");
-            events
-                .schedule_with_delay(Self {}, arrival_delay)
+        fn schedule(sim: &mut Simulation<Store, NotNan<f64>>) {
+            let arrival_delay = NotNan::new(sim.state_mut().gen_arrival_delay()).expect("delay should not be NaN");
+            sim.schedule_with_delay(Self {}, arrival_delay)
                 .expect("arrival delay should always be a positive number");
         }
 
         fn schedule_first(sim: &mut Simulation<Store, NotNan<f64>>) {
             let arrival_delay = sim.state_mut().gen_arrival_delay();
-            let arrival_time = sim.event_queue().current_time() + arrival_delay;
-            sim.event_queue_mut()
-                .schedule(Self {}, arrival_time)
+            let arrival_time = sim.current_time() + arrival_delay;
+            sim.schedule(Self {}, arrival_time)
                 .expect("arrival delay should always be a positive number");
         }
     }
 
     impl OkEvent<Store, NotNan<f64>> for ArrivalEvent {
-        fn execute(&mut self, simulation_state: &mut Store, event_queue: &mut EventQueue<Store, NotNan<f64>>) {
+        fn execute(&mut self, sim: &mut Simulation<Store, NotNan<f64>>) {
             let customer = Customer {
-                service_time_random_draw: simulation_state.rng.random(),
-                arrival_time: *event_queue.current_time(),
+                service_time_random_draw: sim.state_mut().rng.random(),
+                arrival_time: *sim.current_time(),
             };
 
-            if simulation_state.servers_busy < simulation_state.num_servers {
+            if sim.state().servers_busy < sim.state().num_servers {
                 // go directly to counter
-                simulation_state.servers_busy += 1;
-                ServiceEvent::schedule(customer, simulation_state, event_queue);
+                sim.state_mut().servers_busy += 1;
+                ServiceEvent::schedule(customer, sim);
             } else {
                 // get in line
-                simulation_state.customer_queue.push_back(customer);
+                sim.state_mut().customer_queue.push_back(customer);
             }
 
-            Self::schedule(simulation_state, event_queue);
+            Self::schedule(sim);
         }
     }
 
@@ -102,33 +100,34 @@ mod ordered_float_tests {
     struct ServiceEvent {}
 
     impl ServiceEvent {
-        fn schedule(customer: Customer, store: &mut Store, events: &mut EventQueue<Store, NotNan<f64>>) {
-            store.total_time_in_queue += events.current_time() - customer.arrival_time;
+        fn schedule(customer: Customer, sim: &mut Simulation<Store, NotNan<f64>>) {
+            let now = *sim.current_time();
+            sim.state_mut().total_time_in_queue += now - customer.arrival_time;
 
-            let service_delay = customer.service_time_random_draw.ln() / -store.service_rate;
-            let service_time = events.current_time() + service_delay;
+            let service_delay = customer.service_time_random_draw.ln() / -sim.state().service_rate;
+            let service_time = now + service_delay;
 
-            events
-                .schedule(Self {}, service_time)
+            sim.schedule(Self {}, service_time)
                 .expect("service delay should always be positive");
         }
     }
 
     impl OkEvent<Store, NotNan<f64>> for ServiceEvent {
-        fn execute(&mut self, simulation_state: &mut Store, event_queue: &mut EventQueue<Store, NotNan<f64>>) {
+        fn execute(&mut self, sim: &mut Simulation<Store, NotNan<f64>>) {
             // wrap up current customer
-            simulation_state.customers_served += 1;
+            sim.state_mut().customers_served += 1;
 
-            if simulation_state.customer_queue.is_empty() {
+            if sim.state().customer_queue.is_empty() {
                 // go idle
-                simulation_state.servers_busy -= 1;
+                sim.state_mut().servers_busy -= 1;
             } else {
                 // pop customer and schedule new service event
-                let next_customer = simulation_state
+                let next_customer = sim
+                    .state_mut()
                     .customer_queue
                     .pop_front()
                     .expect("queue should not be empty");
-                Self::schedule(next_customer, simulation_state, event_queue);
+                Self::schedule(next_customer, sim);
             }
         }
     }
@@ -138,18 +137,20 @@ mod ordered_float_tests {
     struct EndEvent {}
 
     impl EndEvent {
-        fn schedule(time: NotNan<f64>, events: &mut EventQueue<Store, NotNan<f64>>) {
-            events.schedule(Self {}, time).expect("end time should be positive");
+        fn schedule(time: NotNan<f64>, sim: &mut Simulation<Store, NotNan<f64>>) {
+            sim.schedule(Self {}, time).expect("end time should be positive");
         }
     }
 
     impl OkEvent<Store, NotNan<f64>> for EndEvent {
-        fn execute(&mut self, simulation_state: &mut Store, event_queue: &mut EventQueue<Store, NotNan<f64>>) {
-            simulation_state.complete = true;
+        fn execute(&mut self, sim: &mut Simulation<Store, NotNan<f64>>) {
+            let now = *sim.current_time();
 
-            let now = event_queue.current_time();
-            for customer in simulation_state.customer_queue.iter() {
-                simulation_state.total_time_in_queue += now - customer.arrival_time;
+            let store = sim.state_mut();
+            store.complete = true;
+
+            for customer in store.customer_queue.iter() {
+                store.total_time_in_queue += now - customer.arrival_time;
             }
         }
     }
@@ -162,12 +163,12 @@ mod ordered_float_tests {
         let end_time = NotNan::new(540.0).expect("end time should not be NaN");
 
         let mut sim = Simulation::new(store, start_time);
-        EndEvent::schedule(end_time, sim.event_queue_mut());
+        EndEvent::schedule(end_time, &mut sim);
         ArrivalEvent::schedule_first(&mut sim);
 
         sim.run().expect("simulation should complete normally");
 
-        assert_eq!(end_time, *sim.event_queue().current_time(), "unexpected end time");
+        assert_eq!(end_time, *sim.current_time(), "unexpected end time");
 
         (sim.state().customers_served, sim.state().total_time_in_queue)
     }

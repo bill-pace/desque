@@ -1,4 +1,4 @@
-use super::EventQueue;
+use crate::serial::Simulation;
 use crate::{SimState, SimTime};
 use std::fmt::Debug;
 
@@ -41,12 +41,12 @@ where
     ///
     /// See [`Error`] for more details on the variants of this error enum.
     ///
-    /// [`Simulation::run()`]: crate::serial::Simulation::run
+    /// [`Simulation::run()`]: Simulation::run
     /// [`execute()`]: Event::execute
     /// [`dyn std::error::Error`]: std::error::Error
     /// [`Error`]: crate::Error
     /// [`Error::BadExecution`]: crate::Error::BadExecution
-    fn execute(&mut self, simulation_state: &mut State, event_queue: &mut EventQueue<State, Time>) -> crate::Result;
+    fn execute(&mut self, simulation: &mut Simulation<State, Time>) -> crate::Result;
 }
 
 /// An [`Event`] that is guaranteed not to return an [`Error`] on execution.
@@ -75,8 +75,8 @@ where
     /// Note that the simulation's clock time, accessible on the `event_queue` parameter, will update before invoking
     /// this method.
     ///
-    /// [`Simulation::run()`]: crate::serial::Simulation::run
-    fn execute(&mut self, simulation_state: &mut State, event_queue: &mut EventQueue<State, Time>);
+    /// [`Simulation::run()`]: Simulation::run
+    fn execute(&mut self, simulation: &mut Simulation<State, Time>);
 }
 
 impl<State, Time, OkEventType> Event<State, Time> for OkEventType
@@ -85,8 +85,8 @@ where
     Time: SimTime,
     OkEventType: OkEvent<State, Time>,
 {
-    fn execute(&mut self, simulation_state: &mut State, event_queue: &mut EventQueue<State, Time>) -> crate::Result {
-        OkEvent::execute(self, simulation_state, event_queue);
+    fn execute(&mut self, simulation: &mut Simulation<State, Time>) -> crate::Result {
+        OkEvent::execute(self, simulation);
         Ok(())
     }
 }

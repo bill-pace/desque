@@ -1,4 +1,5 @@
-use super::{Event, EventQueue};
+use super::events::EventQueue;
+use super::Event;
 use crate::{SimState, SimTime};
 
 use std::fmt::{Debug, Formatter};
@@ -93,7 +94,7 @@ where
             }
 
             let mut next_event = next_event.expect("next_event should not be None");
-            next_event.execute(&mut self.state, &mut self.event_queue)?;
+            next_event.execute(self)?;
         }
     }
 
@@ -163,14 +164,9 @@ where
         &mut self.state
     }
 
-    /// Get a shared reference to the event queue.
-    pub fn event_queue(&self) -> &EventQueue<State, Time> {
-        &self.event_queue
-    }
-
-    /// Get an exclusive reference to the event queue.
-    pub fn event_queue_mut(&mut self) -> &mut EventQueue<State, Time> {
-        &mut self.event_queue
+    /// Get a shared reference to the current simulation time.
+    pub fn current_time(&self) -> &Time {
+        self.event_queue.current_time()
     }
 }
 
@@ -321,23 +317,23 @@ mod tests {
 
     #[derive(Debug)]
     struct State {
-        executed_event_values: Vec<u32>,
+        executed_event_values: Vec<i32>,
         complete: bool,
     }
-    impl SimState<u32> for State {
-        fn is_complete(&self, _: &u32) -> bool {
+    impl SimState<i32> for State {
+        fn is_complete(&self, _: &i32) -> bool {
             self.complete
         }
     }
 
     #[derive(Debug)]
     struct TestEvent {
-        value: u32,
+        value: i32,
     }
 
-    impl Event<State, u32> for TestEvent {
-        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, u32>) -> crate::Result {
-            simulation_state.executed_event_values.push(self.value);
+    impl Event<State, i32> for TestEvent {
+        fn execute(&mut self, simulation: &mut Simulation<State, i32>) -> crate::Result {
+            simulation.state_mut().executed_event_values.push(self.value);
             Ok(())
         }
     }
@@ -345,13 +341,13 @@ mod tests {
     #[derive(Debug)]
     struct CompletionEvent {}
 
-    impl OkEvent<State, u32> for CompletionEvent {
-        fn execute(&mut self, simulation_state: &mut State, _: &mut EventQueue<State, u32>) {
-            simulation_state.complete = true;
+    impl OkEvent<State, i32> for CompletionEvent {
+        fn execute(&mut self, simulation: &mut Simulation<State, i32>) {
+            simulation.state_mut().complete = true;
         }
     }
 
-    fn setup() -> Simulation<State, u32> {
+    fn setup() -> Simulation<State, i32> {
         let mut sim = Simulation::new(
             State {
                 executed_event_values: Vec::with_capacity(3),
@@ -363,9 +359,74 @@ mod tests {
         let events: [TestEvent; 3] = [TestEvent { value: 1 }, TestEvent { value: 3 }, TestEvent { value: 2 }];
 
         for (i, event) in events.into_iter().enumerate() {
-            sim.event_queue.schedule(event, 2 * i as u32).unwrap();
+            sim.event_queue.schedule(event, 2 * i as i32).unwrap();
         }
         sim
+    }
+
+    #[test]
+    fn execution_time_ascends() {
+        let mut sim = setup();
+        sim.run().expect("simulation should run to completion");
+
+        assert_eq!(
+            vec![1, 3, 2],
+            sim.state().executed_event_values,
+            "events did not execute in expected order"
+        );
+    }
+
+    #[test]
+    fn schedule_fails_if_given_invalid_execution_time() {
+        let mut sim = setup();
+        let result = sim.schedule(TestEvent { value: 0 }, -1);
+        assert!(result.is_err(), "sim failed to reject event scheduled for the past");
+        assert_eq!(
+            crate::Error::BackInTime,
+            result.err().unwrap(),
+            "sim returned unexpected error type"
+        );
+    }
+
+    #[test]
+    fn unsafe_schedulers_allow_time_to_reverse() {
+        let mut sim = setup();
+        unsafe {
+            sim.schedule_unchecked(TestEvent { value: 1 }, -1);
+        }
+        sim.event_queue
+            .next()
+            .expect("event queue should yield a scheduled event");
+        assert_eq!(
+            -1,
+            *sim.event_queue.current_time(),
+            "current time did not update when popping event"
+        );
+    }
+
+    #[test]
+    fn insertion_sequence_breaks_ties_in_execution_time() {
+        const NUM_EVENTS: i32 = 10;
+        let state = State {
+            executed_event_values: Vec::with_capacity(NUM_EVENTS as usize),
+            complete: false,
+        };
+        let mut sim = Simulation::new(state, 0);
+
+        for copy_id in 0..NUM_EVENTS {
+            sim.schedule(TestEvent { value: copy_id }, 1)
+                .expect("failed to schedule event");
+        }
+        while let Some(mut event) = sim.event_queue.next() {
+            event.execute(&mut sim).expect("failed to execute event");
+        }
+
+        let expected: Vec<_> = (0..NUM_EVENTS).collect();
+        assert_eq!(
+            expected,
+            sim.state().executed_event_values,
+            "events executed out of insertion sequence"
+        );
     }
 
     #[test]
@@ -392,6 +453,57 @@ mod tests {
         assert_eq!(
             expected, sim.state.executed_event_values,
             "simulation did not terminate with completion event"
+        );
+    }
+
+    #[test]
+    fn delay_schedulers_choose_expected_times() {
+        let state = State {
+            executed_event_values: Vec::with_capacity(3),
+            complete: false,
+        };
+        let mut sim = Simulation::new(state, 0);
+        sim.schedule(TestEvent { value: 1 }, 1).unwrap();
+        sim.schedule(TestEvent { value: 2 }, 3).unwrap();
+
+        let mut first_event = sim.event_queue.next().expect("should be able to pop scheduled event");
+        first_event.execute(&mut sim).expect("event should execute normally");
+        assert_eq!(1, *sim.current_time(), "queue should be at time of last popped event");
+        assert_eq!(
+            vec![1],
+            sim.state().executed_event_values,
+            "state should match first executed event"
+        );
+
+        sim.schedule_now(TestEvent { value: 3 })
+            .expect("should be able to schedule new event");
+        sim.schedule_with_delay(TestEvent { value: 4 }, 1)
+            .expect("should be able to schedule new event");
+
+        let mut next_event = sim.event_queue.next().expect("should be able to pop scheduled event");
+        next_event.execute(&mut sim).expect("event should execute normally");
+        assert_eq!(
+            1,
+            *sim.event_queue.current_time(),
+            "queue should be at time of last popped event"
+        );
+        assert_eq!(
+            vec![1, 3],
+            sim.state().executed_event_values,
+            "state should match first executed event"
+        );
+
+        next_event = sim.event_queue.next().expect("should be able to pop scheduled event");
+        next_event.execute(&mut sim).expect("event should execute normally");
+        assert_eq!(
+            2,
+            *sim.event_queue.current_time(),
+            "queue should be at time of last popped event"
+        );
+        assert_eq!(
+            vec![1, 3, 4],
+            sim.state().executed_event_values,
+            "state should match first executed event"
         );
     }
 }
